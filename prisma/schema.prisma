@@ -1,0 +1,191 @@
+// Prisma Schema pour Anjou Explore
+// Documentation: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMINISTRATEURS (pour l'authentification 2FA)
+// ═══════════════════════════════════════════════════════════
+
+model Admin {
+  id        String   @id @default(uuid())
+  name      String   @unique // "José", "Fabien", "Benoît", "Adrien"
+  secret2FA String   @map("secret_2fa") // Secret Google Authenticator unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+// ═══════════════════════════════════════════════════════════
+// ÉVÉNEMENTS (AE6, AE7, etc.)
+// ═══════════════════════════════════════════════════════════
+
+enum EventStatus {
+  DRAFT       // Brouillon (non visible publiquement)
+  OPEN        // Ouvert aux inscriptions
+  CLOSED      // Fermé (événement passé ou complet)
+  ARCHIVED    // Archivé (ancien événement)
+}
+
+model Event {
+  id              String      @id @default(uuid())
+  name            String      // "Anjou Explore #7"
+  slug            String      @unique // "ae7" (pour URL)
+  description     String?     @db.Text
+  date            DateTime    // Date de l'événement
+  status          EventStatus @default(DRAFT)
+  paymentEnabled  Boolean     @default(false) @map("payment_enabled")
+
+  // Métadonnées
+  maxParticipants Int?        @map("max_participants") // Limite optionnelle
+  location        String?     // "Domaine de Nerleux"
+  partnerLogo     String?     @map("partner_logo") // URL ou chemin vers logo partenaire
+
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  formulas        Formula[]
+  reservations    Reservation[]
+
+  @@map("events")
+}
+
+// ═══════════════════════════════════════════════════════════
+// FORMULES/TARIFS (Activités et prix par événement)
+// ═══════════════════════════════════════════════════════════
+
+model Formula {
+  id              String   @id @default(uuid())
+  eventId         String   @map("event_id")
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  activityName    String   @map("activity_name") // "rando papilles", "le défi"
+  priceType       String   @map("price_type")    // "adulte", "enfant"
+  label           String   // "Adulte (+16 ans)"
+  price           Decimal  @db.Decimal(10, 2)
+
+  // Optionnel
+  maxParticipants Int?     @map("max_participants")
+  description     String?  @db.Text
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([eventId, activityName, priceType]) // Une seule formule par combinaison
+  @@index([eventId])
+  @@map("formulas")
+}
+
+// ═══════════════════════════════════════════════════════════
+// RÉSERVATIONS (Inscriptions aux événements)
+// ═══════════════════════════════════════════════════════════
+
+enum PaymentStatus {
+  PENDING   // En attente de paiement
+  PAID      // Payé
+  FAILED    // Échec de paiement
+  REFUNDED  // Remboursé
+  CANCELLED // Annulé
+}
+
+model Reservation {
+  id              String        @id @default(uuid())
+  eventId         String        @map("event_id")
+  event           Event         @relation(fields: [eventId], references: [id])
+
+  // Informations client
+  nom             String
+  prenom          String
+  email           String
+  telephone       String
+
+  // Activité choisie
+  activityName    String        @map("activity_name") // "rando papilles", "le défi"
+
+  // Participants (JSONB pour flexibilité)
+  // Exemple: { "adulte": 2, "enfant": 1 }
+  participants    Json
+
+  // Montant et paiement
+  amount          Decimal       @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
+
+  // SumUp IDs
+  sumupCheckoutId String?       @map("sumup_checkout_id")
+  sumupTransactionId String?    @map("sumup_transaction_id")
+
+  paidAt          DateTime?     @map("paid_at")
+
+  // Métadonnées
+  notes           String?       @db.Text // Notes internes admin
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([eventId])
+  @@index([email])
+  @@index([paymentStatus])
+  @@map("reservations")
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEMANDES DE CONTACT (Formulaire général)
+// ═══════════════════════════════════════════════════════════
+
+enum ContactStatus {
+  NEW       // Nouveau (non traité)
+  PROCESSED // Traité
+  ARCHIVED  // Archivé
+}
+
+model ContactRequest {
+  id            String        @id @default(uuid())
+
+  // Informations de contact
+  nom           String
+  prenom        String?
+  email         String
+  telephone     String
+  message       String        @db.Text
+
+  // Si demande de réservation aventure (formulaire-groupe)
+  isBooking     Boolean       @default(false) @map("is_booking")
+  bookingData   Json?         @map("booking_data") // { participants, durée, formule }
+
+  // Gestion admin
+  status        ContactStatus @default(NEW)
+  processedBy   String?       @map("processed_by") // Nom de l'admin qui a traité
+  processedAt   DateTime?     @map("processed_at")
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("contact_requests")
+}
+
+// ═══════════════════════════════════════════════════════════
+// SESSIONS (pour JWT tokens)
+// ═══════════════════════════════════════════════════════════
+
+model Session {
+  id        String   @id @default(uuid())
+  adminName String   @map("admin_name") // Référence au nom de l'admin
+  token     String   @unique // JWT token
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([expiresAt])
+  @@map("sessions")
+}

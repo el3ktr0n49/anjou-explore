@@ -16,6 +16,8 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env.local
+.env.*.local
 
 # macOS-specific files
 .DS_Store
@@ -28,3 +30,10 @@ wix-export/
 
 # temporary files
 nul
+
+# database
+*.db
+*.db-journal
+
+# Prisma
+prisma/migrations/.prisma_migrate_lock
