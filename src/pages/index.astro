@@ -1,0 +1,198 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import des images depuis src/assets (noms de fichiers lisibles)
+import logoImage from '../assets/images/logo_color_250.webp';
+import canoeImage from '../assets/images/homepage/canoe.webp';
+import groupe from '../assets/images/homepage/groupe.webp';
+import heroBackground from '../assets/images/homepage/hero-background.webp';
+import logoMorgan from '../assets/images/logo-morgan.webp';
+import logoVandB from '../assets/images/logo-vandb.webp';
+import logoOmega from '../assets/images/logo-omega.webp';
+---
+
+<Layout title="Accueil - Anjou Explore">
+  <!-- Hero Section with Parallax -->
+  <section class="parallax-hero relative h-[55vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/20 z-10"></div>
+    <div class="relative z-20 text-center px-4">
+      <!-- Logo above title (optimisé avec le composant Image d'Astro) -->
+      <Image
+        src={logoImage}
+        alt="Anjou Explore Logo"
+        quality={90}
+        loading="eager"
+        format="avif"
+        class="w-full max-w-[250px] mx-auto mb-6"
+      />
+
+      <!-- Text with transparent banner background -->
+      <div class="bg-[var(--color-anjou-gold)]/60 backdrop-blur-sm px-8 py-6 rounded-lg inline-block">
+        <!-- <h1 class="text-4xl md:text-5xl font-serif mb-3">Anjou Explore</h1> -->
+        <p class="text-base md:text-lg max-w-2xl">
+          Des aventures dans une région riche d'un patrimoine culinaire,<br>
+          viticole et historique à découvrir en pleine nature
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Qui sommes-nous Section -->
+  <section class="grid md:grid-cols-2 min-h-[500px]">
+    <!-- Left side - Gold background with white box -->
+    <div class="bg-[var(--color-anjou-gold)] p-8 md:p-12 flex items-center justify-center">
+      <div class="bg-white p-8 md:p-10 max-w-md text-center shadow-lg">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-3">Qui sommes-nous ?</h2>
+        <h3 class="text-lg font-serif text-[var(--color-anjou-brown)] mb-4">José, Fabien & Benoît</h3>
+        <div class="space-y-3 text-[var(--color-anjou-brown)]">
+          <p class="text-sm leading-relaxed">
+            Des explorateurs aux âmes d'aventuriers, des amoureux de la nature et du terroir.
+          </p>
+          <p class="text-sm leading-relaxed font-semibold">
+            Notre but : Vous faire partager des moments et des émotions au cœur de notre belle Région.
+          </p>
+          <p class="text-sm leading-relaxed">
+            Que vous soyez novice, sportif régulier, ou aguerri, vous trouverez facilement votre escapade chez Anjou Explore.
+          </p>
+          <p class="text-sm leading-relaxed">
+            Partez à l'aventure le temps d'une journée ou d'un week-end, à la découverte de notre patrimoine culinaire, viticole et historique, en mêlant itinérance et activités sportives...
+          </p>
+        </div>
+        <a href="/l-équipe" class="inline-block mt-6 px-6 py-2 border-2 border-[var(--color-anjou-gold)] text-[var(--color-anjou-gold)] hover:bg-[var(--color-anjou-gold)] hover:text-white transition rounded">
+          Découvrir
+        </a>
+      </div>
+    </div>
+
+    <!-- Right side - Image -->
+    <div class="h-64 md:h-auto overflow-hidden">
+      <Image
+        src={canoeImage}
+        alt="Canoë sur la Loire"
+        quality={85}
+        loading="lazy"
+        format="avif"
+        class="w-full h-full object-cover scale-150"
+      />
+    </div>
+  </section>
+
+  <!-- Second Image Section -->
+  <section class="w-full">
+    <Image
+      src={groupe}
+      alt="Groupe sur un pont"
+      quality={85}
+      loading="lazy"
+      format="avif"
+      class="w-full h-64 md:h-130 object-cover object-[center_40%]"
+    />
+  </section>
+
+  <!-- Notre Philosophie Section -->
+  <section class="py-16 md:py-20 bg-[var(--color-anjou-beige)]">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center max-w-6xl mx-auto">
+        <!-- Left side - Philosophy text -->
+        <div class="text-center md:text-left">
+          <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-brown)] mb-6">Notre philosophie</h2>
+          <blockquote class="text-xl md:text-2xl italic text-[var(--color-anjou-olive)] mb-4 leading-relaxed">
+            "La plus belle escapade, c'est celle que l'on n'a pas encore faite"
+          </blockquote>
+          <p class="text-lg font-serif text-[var(--color-anjou-gold)] font-semibold">
+            Anjou Explore
+          </p>
+        </div>
+
+        <!-- Right side - YouTube Video -->
+        <div class="relative w-full" style="padding-bottom: 56.25%; /* 16:9 aspect ratio */">
+          <iframe
+            class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+            src="https://www.youtube.com/embed/14JAP7ofucU?start=1"
+            title="Vidéo Anjou Explore"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Partenaires Section -->
+  <section class="py-16 md:py-20 bg-gradient-to-b from-white to-[var(--color-anjou-beige)]/30">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-brown)] mb-3">Nos Partenaires</h2>
+        <p class="text-[var(--color-anjou-olive)] max-w-2xl mx-auto">
+          Ils nous font confiance et nous accompagnent dans nos aventures
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <!-- Morgan Communication -->
+        <a
+          href="https://www.facebook.com/MRGOuestCommunication/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="partner-card bg-white p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+        >
+          <Image
+            src={logoMorgan}
+            alt="Morgan Communication"
+            quality={80}
+            loading="lazy"
+            format="avif"
+            class="h-24 md:h-20 w-auto scale-110 group-hover:scale-125 transition-transform duration-300"
+          />
+        </a>
+
+        <!-- V and B Saumur -->
+        <a
+          href="https://vandb.fr/V-and-B-Saumur.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="partner-card bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+        >
+          <Image
+            src={logoVandB}
+            alt="V and B Saumur"
+            quality={90}
+            loading="lazy"
+            format="avif"
+            class="h-24 md:h-28 object-cover scale-125 w-auto group-hover:scale-145 transition-transform duration-300"
+          />
+        </a>
+
+        <!-- Omega Assurance -->
+        <div class="partner-card bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center group cursor-default">
+          <Image
+            src={logoOmega}
+            alt="Omega Assurance"
+            quality={90}
+            loading="lazy"
+            format="avif"
+            class="h-24 md:h-28 w-auto group-hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style set:html={`
+  .parallax-hero {
+    background-image: url("${heroBackground.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile (fixed background doesn't work well on mobile) */
+  @media (max-width: 768px) {
+    .parallax-hero {
+      background-attachment: scroll;
+    }
+  }
+`}></style>

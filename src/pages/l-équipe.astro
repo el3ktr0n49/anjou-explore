@@ -1,0 +1,130 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import des photos de l'équipe
+import fabienImage from '../assets/images/equipe/fabien.webp';
+import joseImage from '../assets/images/equipe/jose.webp';
+import benImage from '../assets/images/equipe/benoit.webp';
+import equipeHero from '../assets/images/equipe/equipe.webp';
+---
+
+<Layout title="L'Équipe - Anjou Explore" description="Rencontrez José, Fabien & Benoît, vos explorateurs en Anjou">
+  <!-- Hero Section with Team Photo -->
+  <section class="hero-equipe relative h-[50vh] md:h-[60vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/30 z-10"></div>
+    <div class="relative z-20 text-center px-4">
+      <h1 class="text-3xl md:text-5xl font-serif mb-4">L'équipe</h1>
+      <p class="text-base md:text-xl max-w-2xl mx-auto">
+        Vos Explorateurs pour vos prochaines escapades en Anjou
+      </p>
+    </div>
+  </section>
+
+  <!-- Team Members Section -->
+  <section class="py-16 md:py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-3 gap-8 md:gap-12 max-w-6xl mx-auto">
+
+        <!-- Fabien ORILLARD -->
+        <div class="text-center">
+          <div class="mb-6 overflow-hidden rounded-lg shadow-lg">
+            <Image
+              src={fabienImage}
+              alt="Fabien Orillard"
+              quality={85}
+              loading="lazy"
+              format="avif"
+              class="w-full h-80 object-cover hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-2">Fabien ORILLARD</h2>
+          <p class="text-xs text-[var(--color-anjou-brown)] mb-1">29/01/1976</p>
+          <p class="text-sm font-semibold text-[var(--color-anjou-brown)] mb-4 leading-relaxed">
+            Educateur Territorial Activités Physiques & Sportives
+          </p>
+          <p class="text-sm text-[var(--color-anjou-brown)] leading-relaxed italic">
+            "Tout seul on va vite,<br>ensemble on va plus loin !"
+          </p>
+        </div>
+
+        <!-- José PANNEAU -->
+        <div class="text-center">
+          <div class="mb-6 overflow-hidden rounded-lg shadow-lg">
+            <Image
+              src={joseImage}
+              alt="José Panneau"
+              quality={85}
+              loading="lazy"
+              format="avif"
+              class="w-full h-80 object-cover hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-2">José PANNEAU</h2>
+          <p class="text-xs text-[var(--color-anjou-brown)] mb-1">11/11/1994</p>
+          <p class="text-sm font-semibold text-[var(--color-anjou-brown)] mb-4 leading-relaxed">
+            Brevet Professionnel Jeunesse & Sport option Activités Physiques pour Tous
+          </p>
+          <p class="text-sm text-[var(--color-anjou-brown)] leading-relaxed italic">
+            "Pars, reviens, repars, reviens, marche, cours, saute, vole, mais vis putain !"
+          </p>
+        </div>
+
+        <!-- Benoît BONNIN -->
+        <div class="text-center">
+          <div class="mb-6 overflow-hidden rounded-lg shadow-lg">
+            <Image
+              src={benImage}
+              alt="Benoît Bonnin"
+              quality={85}
+              loading="lazy"
+              format="avif"
+              class="w-full h-80 object-cover hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-2">Benoît BONNIN</h2>
+          <p class="text-xs text-[var(--color-anjou-brown)] mb-1">12/01/1986</p>
+          <p class="text-sm font-semibold text-[var(--color-anjou-brown)] mb-4 leading-relaxed">
+            Brevet Professionnel Jeunesse & Sport option Loisirs Tous Publics
+          </p>
+          <p class="text-sm text-[var(--color-anjou-brown)] leading-relaxed italic">
+            "La vie, ce n'est pas seulement respirer, c'est aussi avoir le souffle coupé !"
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Optional CTA Section -->
+  <section class="py-12 bg-[var(--color-anjou-beige)] text-center">
+    <div class="container mx-auto px-4">
+      <h3 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-brown)] mb-4">
+        Prêt à partir à l'aventure avec nous ?
+      </h3>
+      <a
+        href="/notre-catalogue"
+        class="inline-block bg-[var(--color-anjou-gold)] text-white px-8 py-3 rounded hover:opacity-90 transition"
+      >
+        Découvrir nos escapades
+      </a>
+    </div>
+  </section>
+</Layout>
+
+<style set:html={`
+  .hero-equipe {
+    background-image: url("${equipeHero.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile (fixed background doesn't work well on mobile) */
+  @media (max-width: 768px) {
+    .hero-equipe {
+      background-attachment: scroll;
+    }
+  }
+`}></style>

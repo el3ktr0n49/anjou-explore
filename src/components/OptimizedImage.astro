@@ -1,0 +1,51 @@
+---
+/**
+ * Composant OptimizedImage
+ *
+ * Wrapper autour du composant <Image> d'Astro avec des defaults optimisés
+ * pour Anjou Explore
+ *
+ * Usage:
+ * <OptimizedImage
+ *   src="/images/homepage/IMG_0017.webp"
+ *   alt="Description"
+ *   width={1200}
+ *   height={800}
+ * />
+ */
+
+import { Image } from 'astro:assets';
+
+interface Props {
+  src: string | ImageMetadata;
+  alt: string;
+  width?: number;
+  height?: number;
+  quality?: number;
+  loading?: 'lazy' | 'eager';
+  class?: string;
+  format?: 'webp' | 'avif' | 'png' | 'jpg';
+}
+
+const {
+  src,
+  alt,
+  width = 1200,
+  height = 800,
+  quality = 85,
+  loading = 'lazy',
+  class: className = '',
+  format = 'webp'
+} = Astro.props;
+---
+
+<Image
+  src={src}
+  alt={alt}
+  width={width}
+  height={height}
+  quality={quality}
+  loading={loading}
+  format={format}
+  class={className}
+/>

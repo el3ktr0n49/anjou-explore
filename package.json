@@ -1,0 +1,19 @@
+{
+  "name": "anjouexplore",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "optimize-images": "bun run scripts/optimize-images.ts",
+    "update-image-paths": "bun run scripts/update-image-paths.ts"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.16.14",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.1.18"
+  }
+}

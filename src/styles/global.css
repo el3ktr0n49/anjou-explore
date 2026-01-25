@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-anjou-gold: #c4a571;
+  --color-anjou-olive: #6b7456;
+  --color-anjou-brown: #4a3b2f;
+  --color-anjou-beige: #f5f1e8;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--color-anjou-brown);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: Georgia, 'Times New Roman', serif;
+}

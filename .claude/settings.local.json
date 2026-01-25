@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun:*)",
+      "Bash(powershell -Command \"bun --version\")",
+      "Bash(bun.exe:*)",
+      "Bash(ls:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(robocopy:*)",
+      "Bash(xcopy:*)",
+      "Bash(dir:*)",
+      "Read(//c/**)",
+      "Bash(ren:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

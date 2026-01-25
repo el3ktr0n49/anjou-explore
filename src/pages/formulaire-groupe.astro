@@ -1,0 +1,152 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Formulaire Groupe - Anjou Explore" description="Réservez votre sortie en groupe">
+  <div class="container mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold text-center mb-4">Formulaire Groupe</h1>
+    <p class="text-xl text-center text-gray-600 mb-12">
+      Réservez votre escapade en groupe
+    </p>
+
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+      <form id="group-form" class="space-y-6">
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+            Nom et Prénom *
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+            Email *
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+            Téléphone *
+          </label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label for="participants" class="block text-sm font-medium text-gray-700 mb-2">
+            Nombre de participants *
+          </label>
+          <input
+            type="number"
+            id="participants"
+            name="participants"
+            min="1"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
+            Date souhaitée *
+          </label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label for="activity" class="block text-sm font-medium text-gray-700 mb-2">
+            Activité souhaitée *
+          </label>
+          <select
+            id="activity"
+            name="activity"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">Sélectionnez une activité</option>
+            <option value="velo">Vélo & Nature</option>
+            <option value="canoe">Canoë & Patrimoine</option>
+            <option value="gastronomie">Gastronomie & Vins</option>
+            <option value="autre">Autre (préciser dans le message)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="message" class="block text-sm font-medium text-gray-700 mb-2">
+            Message / Demandes particulières
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            rows="4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          ></textarea>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p class="text-sm text-yellow-800">
+            <strong>Note:</strong> Le formulaire de paiement sera intégré prochainement.
+            Pour le moment, nous vous contacterons pour finaliser votre réservation.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition"
+        >
+          Envoyer la demande
+        </button>
+      </form>
+
+      <div id="form-message" class="mt-4 hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('group-form') as HTMLFormElement;
+    const messageDiv = document.getElementById('form-message');
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Pour l'instant, on affiche juste un message de confirmation
+      // Plus tard, on enverra les données à une API
+      if (messageDiv) {
+        messageDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg';
+        messageDiv.textContent = 'Merci ! Votre demande a été envoyée. Nous vous contacterons bientôt.';
+        messageDiv.classList.remove('hidden');
+      }
+
+      form.reset();
+
+      // Cacher le message après 5 secondes
+      setTimeout(() => {
+        messageDiv?.classList.add('hidden');
+      }, 5000);
+    });
+  </script>
+</Layout>
