@@ -1,152 +1,233 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import des images
+import veloVigneImage from '../assets/images/formulaire/velovigne.webp';
+import topImage from '../assets/images/formulaire/top.webp';
 ---
 
-<Layout title="Formulaire Groupe - Anjou Explore" description="Réservez votre sortie en groupe">
-  <div class="container mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold text-center mb-4">Formulaire Groupe</h1>
-    <p class="text-xl text-center text-gray-600 mb-12">
-      Réservez votre escapade en groupe
-    </p>
-
-    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-      <form id="group-form" class="space-y-6">
-        <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-            Nom et Prénom *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-            Email *
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-            Téléphone *
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label for="participants" class="block text-sm font-medium text-gray-700 mb-2">
-            Nombre de participants *
-          </label>
-          <input
-            type="number"
-            id="participants"
-            name="participants"
-            min="1"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
-            Date souhaitée *
-          </label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label for="activity" class="block text-sm font-medium text-gray-700 mb-2">
-            Activité souhaitée *
-          </label>
-          <select
-            id="activity"
-            name="activity"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          >
-            <option value="">Sélectionnez une activité</option>
-            <option value="velo">Vélo & Nature</option>
-            <option value="canoe">Canoë & Patrimoine</option>
-            <option value="gastronomie">Gastronomie & Vins</option>
-            <option value="autre">Autre (préciser dans le message)</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="message" class="block text-sm font-medium text-gray-700 mb-2">
-            Message / Demandes particulières
-          </label>
-          <textarea
-            id="message"
-            name="message"
-            rows="4"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          ></textarea>
-        </div>
-
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p class="text-sm text-yellow-800">
-            <strong>Note:</strong> Le formulaire de paiement sera intégré prochainement.
-            Pour le moment, nous vous contacterons pour finaliser votre réservation.
-          </p>
-        </div>
-
-        <button
-          type="submit"
-          class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition"
-        >
-          Envoyer la demande
-        </button>
-      </form>
-
-      <div id="form-message" class="mt-4 hidden"></div>
+<Layout title="Contact - Anjou Explore" description="Contactez-nous pour toute question ou pour réserver votre aventure en groupe">
+  <!-- Hero Section with Parallax -->
+  <section class="hero-formulaire relative h-[55vh] md:h-[60vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/40 z-10"></div>
+    <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-5xl font-serif mb-6 drop-shadow-lg">Contactez-nous</h1>
+      <div class="bg-[var(--color-anjou-gold)]/70 backdrop-blur-sm px-6 md:px-10 py-6 md:py-8 rounded-lg">
+        <p class="text-sm md:text-base leading-relaxed mb-4">
+          Vous avez une question ? Vous souhaitez réserver une aventure en groupe ?
+        </p>
+        <p class="text-sm md:text-base leading-relaxed font-semibold">
+          Remplissez le formulaire ci-dessous et nous vous répondrons dans les plus brefs délais.
+        </p>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <script>
-    const form = document.getElementById('group-form') as HTMLFormElement;
-    const messageDiv = document.getElementById('form-message');
+  <!-- Form Section -->
+  <section class="py-16 md:py-20 bg-[var(--color-anjou-beige)]">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-8 md:gap-12 max-w-6xl mx-auto">
+        <!-- Left side - Image -->
+        <div class="hidden md:block self-start">
+          <Image
+            src={topImage}
+            alt="Groupe en escapade"
+            quality={85}
+            loading="lazy"
+            format="avif"
+            class="w-full h-[600px] object-cover rounded-lg shadow-lg"
+          />
+        </div>
 
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
+        <!-- Right side - Form -->
+        <div class="bg-white p-8 md:p-10 rounded-lg shadow-lg">
+          <form id="contact-form" class="space-y-6">
+            <!-- Champs de base -->
+            <div>
+              <label for="name" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Nom et Prénom *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-anjou-gold)] focus:border-transparent"
+              />
+            </div>
 
-      // Pour l'instant, on affiche juste un message de confirmation
-      // Plus tard, on enverra les données à une API
-      if (messageDiv) {
-        messageDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg';
-        messageDiv.textContent = 'Merci ! Votre demande a été envoyée. Nous vous contacterons bientôt.';
-        messageDiv.classList.remove('hidden');
-      }
+            <div>
+              <label for="email" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Email *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-anjou-gold)] focus:border-transparent"
+              />
+            </div>
 
-      form.reset();
+            <div>
+              <label for="phone" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Téléphone *
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-anjou-gold)] focus:border-transparent"
+              />
+            </div>
 
-      // Cacher le message après 5 secondes
-      setTimeout(() => {
-        messageDiv?.classList.add('hidden');
-      }, 5000);
-    });
-  </script>
+            <div>
+              <label for="message" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Votre message *
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows="4"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-anjou-gold)] focus:border-transparent"
+              ></textarea>
+            </div>
+
+            <!-- Toggle pour réservation de formule -->
+            <div class="border-t border-gray-200 pt-6">
+              <label class="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="booking-toggle"
+                  class="w-5 h-5 text-[var(--color-anjou-gold)] border-gray-300 rounded focus:ring-[var(--color-anjou-gold)]"
+                />
+                <span class="ml-3 text-sm font-medium text-[var(--color-anjou-brown)]">
+                  Je souhaite réserver une formule d'aventure
+                </span>
+              </label>
+            </div>
+
+            <!-- Champs de réservation (cachés par défaut) -->
+            <div id="booking-fields" class="hidden space-y-6 border-t border-gray-200 pt-6">
+              <div>
+                <label for="participants" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                  Nombre de participants *
+                </label>
+                <input
+                  type="number"
+                  id="participants"
+                  name="participants"
+                  min="1"
+                  class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-anjou-gold)] focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <span class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-3">
+                  Durée de l'escapade *
+                </span>
+                <div class="space-y-2">
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="duration"
+                      value="1jour"
+                      class="w-4 h-4 text-[var(--color-anjou-gold)] border-gray-300 focus:ring-[var(--color-anjou-gold)]"
+                    />
+                    <span class="ml-3 text-sm text-[var(--color-anjou-brown)]">À la journée</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="duration"
+                      value="2jours"
+                      class="w-4 h-4 text-[var(--color-anjou-gold)] border-gray-300 focus:ring-[var(--color-anjou-gold)]"
+                    />
+                    <span class="ml-3 text-sm text-[var(--color-anjou-brown)]">2 jours & 1 nuit en bivouac</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <span class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-3">
+                  Formule souhaitée *
+                </span>
+                <div class="space-y-2">
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="formula"
+                      value="all-inclusive"
+                      class="w-4 h-4 text-[var(--color-anjou-gold)] border-gray-300 focus:ring-[var(--color-anjou-gold)]"
+                    />
+                    <span class="ml-3 text-sm text-[var(--color-anjou-brown)]">All Inclusive - "Suivez le guide !"</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="formula"
+                      value="adventure"
+                      class="w-4 h-4 text-[var(--color-anjou-gold)] border-gray-300 focus:ring-[var(--color-anjou-gold)]"
+                    />
+                    <span class="ml-3 text-sm text-[var(--color-anjou-brown)]">Adventure - "Déplacez-vous en autonomie !"</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="formula"
+                      value="adventure-plus"
+                      class="w-4 h-4 text-[var(--color-anjou-gold)] border-gray-300 focus:ring-[var(--color-anjou-gold)]"
+                    />
+                    <span class="ml-3 text-sm text-[var(--color-anjou-brown)]">Adventure + - "Ajoutez une touche de fun !"</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="formula"
+                      value="race"
+                      class="w-4 h-4 text-[var(--color-anjou-gold)] border-gray-300 focus:ring-[var(--color-anjou-gold)]"
+                    />
+                    <span class="ml-3 text-sm text-[var(--color-anjou-brown)]">Race - "Surpassez-vous !"</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bouton submit -->
+            <button
+              type="submit"
+              class="w-full bg-[var(--color-anjou-gold)] text-white py-3 px-6 rounded font-semibold hover:opacity-90 transition"
+            >
+              Envoyer ma demande
+            </button>
+
+            <!-- Message de confirmation (caché par défaut) -->
+            <div id="form-message" class="hidden"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
 </Layout>
+
+<style set:html={`
+  .hero-formulaire {
+    background-image: url("${veloVigneImage.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile */
+  @media (max-width: 768px) {
+    .hero-formulaire {
+      background-attachment: scroll;
+    }
+  }
+`}></style>
+
+<script src="../scripts/formulaire-groupe.ts"></script>
