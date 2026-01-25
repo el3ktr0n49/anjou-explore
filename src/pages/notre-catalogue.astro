@@ -1,17 +1,203 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import des images
+import heroBackground from '../assets/images/catalogue/hero-background.webp';
+import verresImage from '../assets/images/catalogue/verres.webp';
+import veloImage from '../assets/images/catalogue/velo.webp';
+import soleilImage from '../assets/images/catalogue/soleil.webp';
+import randoImage from '../assets/images/catalogue/rando.webp';
 ---
 
-<Layout title="Notre Catalogue - Anjou Explore" description="Découvrez toutes nos activités et escapades en Anjou">
-  <div class="container mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold text-center mb-4">Notre Catalogue</h1>
-    <p class="text-xl text-center text-gray-600 mb-12">
-      Découvrez toutes nos activités et escapades en Anjou
-    </p>
-
-    <!-- Le contenu sera ajouté après analyse des screenshots -->
-    <div class="text-center py-12">
-      <p class="text-gray-500">Contenu en cours de migration depuis Wix...</p>
+<Layout title="Notre Catalogue - Anjou Explore" description="Découvrez nos formules d'escapades en Anjou : All Inclusive, Adventure, Adventure + et Race">
+  <!-- Hero Section with Parallax -->
+  <section class="hero-catalogue relative h-[55vh] md:h-[60vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/10 z-10"></div>
+    <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-5xl font-serif mb-6">Notre Catalogue</h1>
+      <div class="bg-[var(--color-anjou-gold)]/70 backdrop-blur-sm px-6 md:px-10 py-6 md:py-8 rounded-lg">
+        <p class="text-sm md:text-base leading-relaxed mb-4">
+          Partez pour une aventure itinérante regroupant, marche à pieds, balade à vélo et descente en canoë selon vos envies...
+        </p>
+        <p class="text-sm md:text-base leading-relaxed mb-4">
+          À la journée ou sur un format 2 jours & une nuit en bivouac, choisissez votre formule pour vos prochaines escapades en Anjou !
+        </p>
+        <p class="text-sm md:text-base leading-relaxed mb-4">
+          Vous êtes un groupe, un Comité d'entreprise, un séminaire, un club, une association et vous cherchez une escapade ? Une aventure fédératrice créant une vraie dynamique de groupe...
+        </p>
+        <p class="text-sm md:text-base leading-relaxed font-semibold">
+          N'hésitez pas à nous faire part de vos envies pour construire votre projet
+        </p>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Section 1: All Inclusive -->
+  <section class="grid md:grid-cols-2 min-h-[500px] bg-[var(--color-anjou-beige)]">
+    <!-- Image gauche -->
+    <div class="h-64 md:h-auto overflow-hidden p-6 md:p-8">
+      <Image
+        src={verresImage}
+        alt="Dégustation de vins"
+        quality={85}
+        loading="lazy"
+        format="avif"
+        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 rounded-lg shadow-lg"
+      />
+    </div>
+
+    <!-- Texte droite -->
+    <div class="p-8 md:p-12 flex items-center justify-center">
+      <div class="max-w-md">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-brown)] mb-3">All Inclusive</h2>
+        <h3 class="text-lg md:text-xl italic text-[var(--color-anjou-gold)] mb-6">"Suivez le guide !"</h3>
+        <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-6">
+          Sans avoir à vous soucier des chemins à suivre, vous n'aurez qu'à admirer et contempler avec plaisir, les coteaux de la Loire et du Thouet.
+          Accompagné de l'un de nos Exploreurs, baladez-vous de dégustation en dégustation.
+        </p>
+        <a
+          href="/formulaire-groupe"
+          class="inline-block bg-[var(--color-anjou-gold)] text-white px-6 py-3 rounded hover:opacity-90 transition"
+        >
+          Nous contacter
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Adventure -->
+  <section class="grid md:grid-cols-2 min-h-[500px] bg-[var(--color-anjou-brown)]">
+    <!-- Image gauche -->
+    <div class="h-64 md:h-auto overflow-hidden p-6 md:p-8">
+      <Image
+        src={veloImage}
+        alt="Vélo en nature"
+        quality={85}
+        loading="lazy"
+        format="avif"
+        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 rounded-lg shadow-lg"
+      />
+    </div>
+
+    <!-- Texte droite -->
+    <div class="p-8 md:p-12 flex items-center justify-center">
+      <div class="max-w-md">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-3">Adventure</h2>
+        <h3 class="text-lg md:text-xl italic text-white mb-6">"Déplacez-vous en autonomie !"</h3>
+        <p class="text-sm md:text-base text-white leading-relaxed mb-6">
+          Ici vous choisissez de rejoindre vos Exploreurs sur les différents checkpoints. Suivez le roadbook et la carte.
+          Des temps de réflexions et d'entraides seront nécessaires pour atteindre vos objectifs.
+        </p>
+        <a
+          href="/formulaire-groupe"
+          class="inline-block bg-[var(--color-anjou-gold)] text-white px-6 py-3 rounded hover:opacity-90 transition"
+        >
+          Nous contacter
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Adventure + -->
+  <section class="grid md:grid-cols-2 min-h-[500px] bg-[var(--color-anjou-olive)]">
+    <!-- Image gauche -->
+    <div class="h-64 md:h-auto overflow-hidden p-6 md:p-8">
+      <Image
+        src={soleilImage}
+        alt="Aventure au soleil"
+        quality={85}
+        loading="lazy"
+        format="avif"
+        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 rounded-lg shadow-lg"
+      />
+    </div>
+
+    <!-- Texte droite -->
+    <div class="p-8 md:p-12 flex items-center justify-center">
+      <div class="max-w-md">
+        <h2 class="text-2xl md:text-3xl font-serif text-white mb-3">Adventure +</h2>
+        <h3 class="text-lg md:text-xl italic text-[var(--color-anjou-beige)] mb-6">"Ajoutez une touche de fun !"</h3>
+        <p class="text-sm md:text-base text-white leading-relaxed mb-6">
+          Toujours autonome dans vos déplacements.
+          Préparez-vous à vivre un défi sportif, collectif ou individuel.
+        </p>
+        <a
+          href="/formulaire-groupe"
+          class="inline-block bg-[var(--color-anjou-gold)] text-white px-6 py-3 rounded hover:opacity-90 transition"
+        >
+          Nous contacter
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Race -->
+  <section class="grid md:grid-cols-2 min-h-[500px] bg-[var(--color-anjou-beige)]">
+    <!-- Image gauche -->
+    <div class="h-64 md:h-auto overflow-hidden p-6 md:p-8">
+      <Image
+        src={randoImage}
+        alt="Randonnée sportive"
+        quality={85}
+        loading="lazy"
+        format="avif"
+        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 rounded-lg shadow-lg"
+      />
+    </div>
+
+    <!-- Texte droite -->
+    <div class="p-8 md:p-12 flex items-center justify-center">
+      <div class="max-w-md">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-brown)] mb-3">Race</h2>
+        <h3 class="text-lg md:text-xl italic text-[var(--color-anjou-gold)] mb-6">"Surpassez-vous !"</h3>
+        <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-6">
+          Au fil des épreuves, il s'agit de pimenter l'expérience avec des défis à relever tels qu'une course d'orientation, du run&bike ou des transitions chronométrées.
+        </p>
+        <a
+          href="/formulaire-groupe"
+          class="inline-block bg-[var(--color-anjou-gold)] text-white px-6 py-3 rounded hover:opacity-90 transition"
+        >
+          Nous contacter
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-12 bg-gradient-to-b from-white to-[var(--color-anjou-beige)]/30 text-center">
+    <div class="container mx-auto px-4">
+      <h3 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-brown)] mb-4">
+        Prêt à choisir votre aventure ?
+      </h3>
+      <p class="text-[var(--color-anjou-olive)] mb-6 max-w-2xl mx-auto">
+        Contactez-nous pour construire ensemble votre escapade sur-mesure en Anjou
+      </p>
+      <a
+        href="/formulaire-groupe"
+        class="inline-block bg-[var(--color-anjou-gold)] text-white px-8 py-3 rounded hover:opacity-90 transition"
+      >
+        Nous contacter
+      </a>
+    </div>
+  </section>
 </Layout>
+
+<style set:html={`
+  .hero-catalogue {
+    background-image: url("${heroBackground.src}");
+    background-attachment: fixed;
+    background-position: center -170px;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+
+  /* Fallback for mobile (fixed background doesn't work well on mobile) */
+  @media (max-width: 768px) {
+    .hero-catalogue {
+      background-attachment: scroll;
+      background-position: center -170px;
+    }
+  }
+`}></style>
