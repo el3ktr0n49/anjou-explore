@@ -1,0 +1,189 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+
+// Import de l'image
+import backgroundImage from '../../../assets/images/reglement/background.webp';
+---
+
+<Layout title="Règlement - Le Défi Anjou Explore" description="Règlement de la course Le Défi Anjou Explore - Anjou Explore #6">
+  <!-- Hero Section with Parallax -->
+  <section class="hero-reglement relative h-[40vh] md:h-[50vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/60 z-10"></div>
+    <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-5xl font-serif mb-4 drop-shadow-lg">RÈGLEMENT</h1>
+      <p class="text-lg md:text-2xl font-semibold drop-shadow-md">"Le Défi Anjou Explore"</p>
+    </div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="py-12 md:py-16 bg-gradient-to-b from-white to-[var(--color-anjou-beige)]/30">
+    <div class="container mx-auto px-4 max-w-4xl">
+      <div class="bg-white p-6 md:p-10 rounded-lg shadow-lg space-y-8">
+
+        <!-- Introduction -->
+        <div class="border-l-4 border-[var(--color-anjou-gold)] pl-6">
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+            Par le seul fait de s'inscrire au défi Anjou Explore, chaque concurrent s'engage à se soumettre au présent règlement de course, en accepter toutes les conditions et de respecter :
+          </p>
+        </div>
+
+        <!-- Respect et conditions -->
+        <div class="space-y-4">
+          <ul class="list-disc list-inside space-y-3 text-sm md:text-base text-[var(--color-anjou-brown)]">
+            <li>
+              <strong>La nature et les propriétés</strong> qu'il traverse. Interdiction formelle de jeter des déchets sur les voies empruntées, sous peine de disqualification
+            </li>
+            <li>
+              <strong>L'âge requis :</strong> être né(e) avant le 1er janvier 2013 (une autorisation parentale manuscrite sera demandée dans le cas d'un jeune concurrent qui voudrait faire le défi)
+            </li>
+            <li>
+              <strong>Le matériel</strong> mis à disposition pour la manifestation (balises, lance pierres, gros palets)
+            </li>
+            <li>
+              <strong>Les consignes de sécurité</strong> propres aux activités ainsi que les personnes qui les encadrent
+            </li>
+            <li>
+              <strong>Les bénévoles,</strong> indispensables au bon déroulement de cette course
+            </li>
+          </ul>
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mt-4">
+            Chaque concurrent autorise l'organisation à utiliser son image à travers les différents supports de communications de l'association Anjou Explore.
+          </p>
+        </div>
+
+        <!-- Arbitrage -->
+        <div class="bg-[var(--color-anjou-beige)] p-6 rounded-lg">
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-brown)] mb-4">→ Arbitrage</h2>
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-3">
+            La responsabilité en revient à l'équipe organisatrice et ses bénévoles chargés de l'encadrement des épreuves :
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-sm md:text-base text-[var(--color-anjou-brown)]">
+            <li>Elle est la seule juge. Elle peut intervenir, sanctionner, sur tout le circuit en cas de mise en danger des sportifs ou non-respect du règlement</li>
+            <li>Elle seule peut arbitrer les litiges éventuels</li>
+            <li>Elle se réserve également le droit de modifier le parcours au dernier moment ou d'annuler l'épreuve (les kilométrages ne vous sont donnés qu'à titre indicatif)</li>
+          </ul>
+        </div>
+
+        <!-- LES ÉQUIPES -->
+        <div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-3">LES ÉQUIPES</h2>
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+            Pour le défi Anjou Explore, les équipes sont composées de <strong>1 à 3 personnes maximum.</strong> Nous précisons que des jeunes concurrents âgés de 16 ans révolus peuvent le faire sous la condition ultime de disposer d'une autorisation parentale manuscrite et être né(e) avant le 1er janvier 2009.
+          </p>
+        </div>
+
+        <!-- HORAIRES -->
+        <div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-3">HORAIRES ET BARRIÈRES HORAIRES</h2>
+          <ul class="space-y-2 text-sm md:text-base text-[var(--color-anjou-brown)]">
+            <li>→ <strong>À partir de 14h00 :</strong> Accueil des participants</li>
+            <li>→ <strong>14h45 :</strong> Briefing obligatoire</li>
+            <li>→ <strong>15h00 :</strong> Départ des premiers concurrents</li>
+            <li>→ <strong>15h30 :</strong> Départ des derniers concurrents</li>
+          </ul>
+          <p class="text-sm text-[var(--color-anjou-brown)] mt-3 italic">
+            L'équipe d'Anjou Explore se donne le droit de réserve de donner le départ avant 15h suivant le nombre de participants.
+          </p>
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 mt-4">
+            <p class="text-sm md:text-base text-red-800 font-semibold">
+              ⚠️ ATTENTION
+            </p>
+            <p class="text-sm md:text-base text-red-800 mt-2">
+              Chaque participant (ou équipes) dispose d'<strong>1h30 maximum</strong> pour réaliser l'ensemble du parcours, sous peine de pénalités :
+            </p>
+            <p class="text-sm text-red-700 mt-2">
+              Au delà d'une heure trente de course, chaque minute supplémentaire = 5 points de pénalités sur le total de points réalisés sur les ateliers
+            </p>
+          </div>
+        </div>
+
+        <!-- LE PARCOURS -->
+        <div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-3">LE PARCOURS</h2>
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-3">
+            Le parcours n'est pas chronométré pour ce défi. Seul un temps limité est imposé pour revenir au point de départ. Le parcours s'effectuera à l'aide d'un roadbook. Des balises seront positionnées sur le parcours à des endroits stratégiques.
+          </p>
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+            Chaque équipe devra participer à <strong>3 ateliers</strong> de tirs, d'orientation ou de lancers.
+          </p>
+        </div>
+
+        <!-- LES ÉPREUVES -->
+        <div class="space-y-4">
+          <div class="bg-[var(--color-anjou-olive)]/10 p-5 rounded-lg">
+            <h3 class="text-lg md:text-xl font-serif text-[var(--color-anjou-olive)] mb-2">L'ÉPREUVE DE TIR</h3>
+            <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+              Arrivé sur le lieu de l'épreuve, vous trouverez les consignes pour réaliser votre défi. Le responsable, vous donnera un top départ afin de chronométrer votre épreuve. À vous de vous organiser pour optimiser votre temps.
+            </p>
+          </div>
+
+          <div class="bg-[var(--color-anjou-olive)]/10 p-5 rounded-lg">
+            <h3 class="text-lg md:text-xl font-serif text-[var(--color-anjou-olive)] mb-2">L'ÉPREUVE DE LANCER</h3>
+            <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+              Arrivé sur le lieu de l'épreuve, un animateur vous expliquera les règles de ce nouveau défi.
+            </p>
+          </div>
+
+          <div class="bg-[var(--color-anjou-olive)]/10 p-5 rounded-lg">
+            <h3 class="text-lg md:text-xl font-serif text-[var(--color-anjou-olive)] mb-2">L'ÉPREUVE D'ORIENTATION</h3>
+            <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+              En autonomie, à vous de retrouver les bonnes balises dans une zone de jeu définie.
+            </p>
+          </div>
+        </div>
+
+        <!-- CLASSEMENT FINAL -->
+        <div class="bg-[var(--color-anjou-gold)]/10 p-6 rounded-lg">
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-3">Classement Final</h2>
+          <p class="text-sm text-[var(--color-anjou-brown)] italic mb-3">(Consultable sur le site la semaine suivante de l'événement)</p>
+          <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+            Le classement final sera réalisé en fonction du classement des 3 épreuves précédemment décrites. La première place donnant 1 point, la deuxième 2 points et ainsi de suite. Le plus petit score sera déclaré gagnant.
+          </p>
+        </div>
+
+        <!-- MATÉRIEL OBLIGATOIRE -->
+        <div>
+          <h2 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-gold)] mb-4">MATÉRIEL OBLIGATOIRE</h2>
+          <ul class="list-disc list-inside space-y-2 text-sm md:text-base text-[var(--color-anjou-brown)]">
+            <li>1 moyen de gérer son temps par équipe</li>
+            <li>1 téléphone portable afin de joindre l'organisation si besoin en cas de souci majeur</li>
+            <li>Tenue de sport et chaussures de sport fortement recommandées</li>
+            <li>1 roadbook et une feuille de poinçonnage indiquant votre heure de départ fournis par l'organisation</li>
+            <li>1 réserve d'eau d'environ 500 ml</li>
+          </ul>
+          <p class="text-sm text-gray-600 mt-4 italic">
+            Cette liste est susceptible d'évoluer, nous vous en informerons en temps voulu.
+          </p>
+        </div>
+
+        <!-- Bouton retour -->
+        <div class="text-center pt-6 border-t border-gray-200">
+          <a
+            href="/evenements/ae6"
+            class="inline-block bg-[var(--color-anjou-gold)] text-white px-8 py-3 rounded hover:opacity-90 transition"
+          >
+            ← Retour à l'événement
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style set:html={`
+  .hero-reglement {
+    background-image: url("${backgroundImage.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile */
+  @media (max-width: 768px) {
+    .hero-reglement {
+      background-attachment: scroll;
+    }
+  }
+`}></style>

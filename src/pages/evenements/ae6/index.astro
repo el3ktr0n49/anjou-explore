@@ -1,0 +1,173 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import des images
+import heroBackground from '../../assets/images/evenements/ae6/hero-background.webp';
+import logoNerleux from '../../assets/images/evenements/ae6/logo.webp';
+import flyerImage from '../../assets/images/evenements/ae6/flyer.webp';
+---
+
+<Layout title="Anjou Explore #6 - Evènement du 29 Mars 2025" description="Découvrez notre 6ème événement en partenariat avec le Domaine de Nerleux">
+  <!-- Hero Section with Parallax -->
+  <section class="hero-ae6 relative h-[55vh] md:h-[60vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/50 z-10"></div>
+    <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <!-- Badge "Évènement terminé" -->
+      <div class="inline-block bg-red-600 text-white px-6 py-2 rounded-full text-sm font-semibold mb-4 shadow-lg">
+        ⏰ Évènement terminé
+      </div>
+      <h1 class="text-3xl md:text-5xl font-serif mb-4 drop-shadow-lg">Anjou Explore #6</h1>
+      <p class="text-lg md:text-2xl font-semibold drop-shadow-md">29 Mars 2025</p>
+    </div>
+  </section>
+
+  <!-- Partenaire Section -->
+  <section class="py-8 bg-gradient-to-b from-white to-[var(--color-anjou-beige)]/30">
+    <div class="container mx-auto px-4 text-center">
+      <p class="text-sm md:text-base text-[var(--color-anjou-brown)] mb-4">
+        Cet événement est accueilli par
+      </p>
+      <div class="flex justify-center">
+        <Image
+          src={logoNerleux}
+          alt="Domaine de Nerleux"
+          quality={90}
+          loading="lazy"
+          format="avif"
+          class="h-24 md:h-32 w-auto"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Section -->
+  <section class="py-12 md:py-16 bg-[var(--color-anjou-beige)]/30">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-8 md:gap-12 max-w-6xl mx-auto items-start">
+
+        <!-- Left side - Content -->
+        <div class="space-y-6">
+          <!-- Le Programme -->
+          <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+            <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-4">
+              Le Programme
+            </h2>
+            <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-4">
+              Anjou Explore vous attend le 29 Mars 2025 pour son 6ème événement en partenariat avec le Domaine de Nerleux.
+            </p>
+            <div class="border-l-4 border-[var(--color-anjou-gold)] pl-4">
+              <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-2">
+                Au programme, une <strong>Rando Papilles (6km)</strong> et un <strong>Défis Anjou Explore</strong> d'environ 8km entre
+              </p>
+              <p class="text-lg md:text-xl font-serif text-[var(--color-anjou-olive)] mb-2">
+                Le Thouet et Vignes !
+              </p>
+            </div>
+          </div>
+
+          <!-- Sur le parcours -->
+          <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+            <h3 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-brown)] mb-4">
+              Sur le parcours
+            </h3>
+            <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+              Retrouvez notre équipe pour 2 ateliers made in Anjou Explore ainsi que l'équipe du Domaine de NERLEUX pour ses 2 dégustations de produits locaux.
+            </p>
+          </div>
+
+          <!-- Le Défi -->
+          <div class="bg-[var(--color-anjou-olive)] text-white p-6 md:p-8 rounded-lg shadow-lg">
+            <h3 class="text-xl md:text-2xl font-serif mb-4">
+              Un Défi accessible à tous
+            </h3>
+            <p class="text-sm md:text-base leading-relaxed mb-4">
+              L'équipe a planché sur un format Défi accessible à tous alors...
+            </p>
+            <p class="text-base md:text-lg font-semibold">
+              ...Venez affronter un nouveau défi made in Anjou Explore sans oublier les dégustations sur la ligne d'arrivée
+            </p>
+          </div>
+
+          <!-- EN EXCLU -->
+          <div class="bg-[var(--color-anjou-gold)] text-white p-6 md:p-8 rounded-lg shadow-lg">
+            <h3 class="text-xl md:text-2xl font-serif mb-4">
+              ⭐ EN EXCLU
+            </h3>
+            <p class="text-sm md:text-base leading-relaxed mb-4">
+              Vous aurez la possibilité de déguster les délicieuses crêpes d'Anjou Explore autour d'une bonne bière !
+            </p>
+            <div class="text-xs space-y-1 opacity-90">
+              <p>* Uniquement sur réservations</p>
+              <p>* Fin 19h00</p>
+            </div>
+          </div>
+
+          <!-- Bouton Réservation désactivé -->
+          <div class="text-center">
+            <button
+              disabled
+              class="bg-gray-400 text-gray-600 px-8 py-3 rounded font-semibold cursor-not-allowed opacity-60"
+            >
+              Réservations closes
+            </button>
+            <p class="text-xs text-gray-500 mt-2">Cet événement est terminé</p>
+          </div>
+
+          <!-- Lien vers règlement -->
+          <div class="text-center pt-4">
+            <a
+              href="/evenements/ae6/reglement"
+              class="text-[var(--color-anjou-brown)] hover:text-[var(--color-anjou-gold)] underline text-sm"
+            >
+              Consulter le règlement de la course →
+            </a>
+          </div>
+        </div>
+
+        <!-- Right side - Flyer -->
+        <div class="flex justify-center items-start sticky top-24">
+          <div class="flyer-container">
+            <Image
+              src={flyerImage}
+              alt="Flyer Anjou Explore #6"
+              quality={90}
+              loading="lazy"
+              format="avif"
+              class="w-full h-auto rounded-lg shadow-2xl"
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style set:html={`
+  .hero-ae6 {
+    background-image: url("${heroBackground.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile */
+  @media (max-width: 768px) {
+    .hero-ae6 {
+      background-attachment: scroll;
+    }
+  }
+
+  /* Flyer container with poster effect */
+  .flyer-container {
+    transform: rotate(1deg);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .flyer-container:hover {
+    transform: rotate(0deg) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+`}></style>

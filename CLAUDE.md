@@ -60,23 +60,30 @@ anjouexplore/
 │   │       ├── equipe/
 │   │       ├── catalogue/
 │   │       ├── suggestions/
-│   │       ├── ae6/
+│   │       ├── galerie/
+│   │       ├── evenements/
+│   │       │   └── ae6/
 │   │       ├── formulaire/
 │   │       └── reglement/
 │   ├── pages/              # File-based routing
-│   │   ├── index.astro           # Homepage (/)
-│   │   ├── notre-catalogue.astro # (/notre-catalogue)
-│   │   ├── nos-suggestions.astro # (/nos-suggestions)
-│   │   ├── l-équipe.astro        # (/l-équipe)
-│   │   ├── galerie-photos.astro  # (/galerie-photos)
-│   │   ├── témoignages.astro     # (/témoignages)
-│   │   ├── formulaire-groupe.astro # (/formulaire-groupe)
-│   │   ├── règlement-course.astro  # (/règlement-course)
-│   │   └── ae6.astro             # (/ae6)
+│   │   ├── index.astro              # Homepage (/)
+│   │   ├── equipe.astro             # (/equipe)
+│   │   ├── notre-catalogue.astro    # (/notre-catalogue)
+│   │   ├── nos-suggestions.astro    # (/nos-suggestions)
+│   │   ├── galerie-photos.astro     # (/galerie-photos)
+│   │   ├── formulaire-groupe.astro  # (/formulaire-groupe)
+│   │   ├── témoignages.astro        # (/témoignages) - À faire
+│   │   └── evenements/
+│   │       └── ae6/
+│   │           ├── index.astro      # (/evenements/ae6)
+│   │           └── reglement.astro  # (/evenements/ae6/reglement)
 │   ├── layouts/
 │   │   └── Layout.astro    # Main layout (header, footer, navigation)
 │   ├── components/         # Reusable components
 │   │   └── OptimizedImage.astro  # Wrapper du composant Image d'Astro
+│   ├── scripts/            # Scripts TypeScript pour client-side
+│   │   ├── galerie-photos.ts      # Lightbox gallery
+│   │   └── formulaire-groupe.ts   # Dynamic form logic
 │   └── styles/
 │       └── global.css      # TailwindCSS import
 ├── public/                 # Assets statiques non traités (favicon, robots.txt, etc.)
@@ -130,6 +137,8 @@ import heroImage from '../assets/images/homepage/canoe.webp';
 ## Migration Status
 
 ### ✅ Complété (25 janvier 2026)
+
+#### Infrastructure
 - ✅ Initialisation du projet avec Astro + Bun + TailwindCSS v4
 - ✅ Copie de toutes les images depuis Wix (19 fichiers, 44MB)
 - ✅ **Optimisation des images** :
@@ -138,33 +147,64 @@ import heroImage from '../assets/images/homepage/canoe.webp';
   - Mise à jour automatique des chemins dans les fichiers .astro
   - Composant `<OptimizedImage>` créé
   - Guide complet : [GUIDE-IMAGES.md](GUIDE-IMAGES.md)
-- ✅ Layout complet :
+
+#### Layout & Navigation
+- ✅ Layout complet (`src/layouts/Layout.astro`) :
   - Header avec logo Anjou Explore
-  - Navigation avec sous-menus hover (Notre Catalogue > Nos Suggestions, Anjou Explore #6 > Règlement)
+  - Navigation desktop avec sous-menus hover :
+    - Notre Catalogue > Nos Suggestions
+    - Evènements > Anjou Explore #6
   - Bouton Contact doré + téléphone + icônes sociales
   - Footer beige avec infos de contact
   - Menu mobile responsive
-- ✅ **Page d'accueil complète** :
-  - Hero avec effet parallaxe (background-attachment: fixed)
-  - Logo + bandeau transparent au-dessus du titre
-  - Section "Qui sommes-nous ?" avec rectangle blanc sur fond doré
-  - Images canoë + groupe Loire
-  - Section Nos Partenaires (3 logos avec liens cliquables)
 - ✅ Palette de couleurs Wix :
   - Or : #c4a571
   - Olive : #6b7456
   - Marron : #4a3b2f
   - Beige : #f5f1e8
 
-### 🔄 En cours (prochaine étape)
-- Page L'Équipe (José, Fabien, Benoît - 3 cartes avec photos)
-- Migration des autres pages (Notre Catalogue, Nos Suggestions, AE6, Formulaire, Règlement)
+#### Pages Migrées
+- ✅ **Page d'accueil** (`index.astro`) :
+  - Hero avec effet parallaxe (background-attachment: fixed)
+  - Logo + bandeau transparent au-dessus du titre
+  - Section "Qui sommes-nous ?" avec rectangle blanc sur fond doré
+  - Images canoë + groupe Loire
+  - Section Nos Partenaires (3 logos avec liens cliquables)
+- ✅ **Page L'Équipe** (`equipe.astro`) :
+  - Présentation de José, Fabien et Benoît avec photos
+  - Cartes élégantes avec hover effects
+- ✅ **Page Notre Catalogue** (`notre-catalogue.astro`) :
+  - 4 formules : All Inclusive, Adventure, Adventure +, Race
+  - Layout alternant image/texte avec CTA
+- ✅ **Page Nos Suggestions** (`nos-suggestions.astro`) :
+  - Hero avec parallaxe
+  - Sections : Châteaux, Caves, Restaurants, Musées, Activités insolites
+- ✅ **Page Formulaire Groupe** (`formulaire-groupe.astro`) :
+  - Formulaire dynamique avec toggle checkbox
+  - Champs conditionnels pour réservations
+  - Script externe : `src/scripts/formulaire-groupe.ts`
+- ✅ **Page Galerie Photos** (`galerie-photos.astro`) :
+  - Grille responsive (1/2/3 colonnes)
+  - Lightbox avec navigation (prev/next, clavier)
+  - Effets hover élégants
+  - Script externe : `src/scripts/galerie-photos.ts`
+- ✅ **Page Evènement AE6** (`evenements/ae6/index.astro`) :
+  - Structure extensible pour futurs évènements
+  - Badge "Évènement terminé"
+  - Logo partenaire (Domaine de Nerleux)
+  - Programme détaillé avec sections colorées
+  - Flyer avec effet poster
+  - Bouton réservation désactivé
+  - Lien vers règlement
+- ✅ **Page Règlement** (`evenements/ae6/reglement.astro`) :
+  - Règlement complet du Défi Anjou Explore
+  - Sections structurées et colorées
+  - Hero avec parallaxe
+  - Lien retour vers évènement
 
 ### 📋 À faire
-- Amélioration du design (header plus fin, meilleure navigation)
-- Page Galerie Photos
 - Page Témoignages
-- Intégration API SumUp pour les paiements
+- Intégration API SumUp pour les paiements (évènements AE6+)
 - Base de données (gestion paiements + auth admin)
 - Page d'administration
 - Configuration Docker/Kubernetes
@@ -181,9 +221,17 @@ import heroImage from '../assets/images/homepage/canoe.webp';
 - Mettre à jour dans le footer si changement
 
 ### Navigation
-- 9 pages au total (incluant l'accueil)
+- Structure hiérarchique avec sous-menus :
+  - Accueil
+  - L'équipe
+  - Notre Catalogue
+    - Nos Suggestions
+  - Evènements
+    - Anjou Explore #6 (avec lien vers Règlement dans la page)
+  - Galerie Photos
+  - Contact (bouton doré mis en évidence)
 - Menu responsive avec hamburger sur mobile
-- "Formulaire Groupe" mis en évidence (bouton vert)
+- Architecture extensible pour futurs évènements
 
 ### Composants à créer
 Composants réutilisables à extraire au fur et à mesure :
