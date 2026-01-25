@@ -1,14 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { Image } from 'astro:assets';
 
 // Import de l'image
 import chateauImage from '../assets/images/suggestions/chateau.webp';
 ---
 
 <Layout title="Nos Suggestions - Anjou Explore" description="Découvrez nos suggestions de visites et activités insolites en Anjou">
-  <!-- Hero Section with Château Background -->
-  <section class="hero-suggestions relative h-[50vh] md:h-[60vh] flex items-center justify-center text-white">
+  <!-- Hero Section with Château Background and Parallax -->
+  <section class="hero-suggestions-parallax relative h-[80vh] md:h-[90vh] flex items-center justify-center text-white overflow-hidden">
+    <div class="hero-suggestions-bg absolute inset-0 w-full h-[120%]"></div>
     <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/50 z-10"></div>
     <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
       <h1 class="text-3xl md:text-5xl font-serif mb-6 drop-shadow-lg">Nos Suggestions</h1>
@@ -110,18 +110,42 @@ import chateauImage from '../assets/images/suggestions/chateau.webp';
 </Layout>
 
 <style set:html={`
-  .hero-suggestions {
+  .hero-suggestions-parallax {
+    position: relative;
+  }
+
+  .hero-suggestions-bg {
     background-image: url("${chateauImage.src}");
-    background-attachment: fixed;
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-  }
-
-  /* Fallback for mobile (fixed background doesn't work well on mobile) */
-  @media (max-width: 768px) {
-    .hero-suggestions {
-      background-attachment: scroll;
-    }
+    will-change: transform;
+    transition: transform 0.1s ease-out;
   }
 `}></style>
+
+<script>
+  // Parallax effect on scroll
+  function handleParallax() {
+    const heroSection = document.querySelector('.hero-suggestions-parallax') as HTMLElement;
+    const heroBg = document.querySelector('.hero-suggestions-bg') as HTMLElement;
+
+    if (!heroSection || !heroBg) return;
+
+    const scrollPosition = window.pageYOffset;
+    const heroHeight = heroSection.offsetHeight;
+
+    // Only apply parallax while the hero section is visible
+    if (scrollPosition < heroHeight) {
+      // Move background slower than scroll (parallax effect)
+      const parallaxSpeed = 0.5;
+      heroBg.style.transform = `translateY(${scrollPosition * parallaxSpeed}px)`;
+    }
+  }
+
+  // Add scroll event listener
+  window.addEventListener('scroll', handleParallax, { passive: true });
+
+  // Initial call
+  handleParallax();
+</script>
