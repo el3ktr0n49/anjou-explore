@@ -1,17 +1,127 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import de l'image
+import chateauImage from '../assets/images/suggestions/chateau.webp';
 ---
 
-<Layout title="Nos Suggestions - Anjou Explore" description="Découvrez nos suggestions d'escapades">
-  <div class="container mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold text-center mb-4">Nos Suggestions</h1>
-    <p class="text-xl text-center text-gray-600 mb-12">
-      Nos meilleures recommandations pour découvrir l'Anjou
-    </p>
-
-    <!-- Le contenu sera ajouté après analyse des screenshots -->
-    <div class="text-center py-12">
-      <p class="text-gray-500">Contenu en cours de migration depuis Wix...</p>
+<Layout title="Nos Suggestions - Anjou Explore" description="Découvrez nos suggestions de visites et activités insolites en Anjou">
+  <!-- Hero Section with Château Background -->
+  <section class="hero-suggestions relative h-[50vh] md:h-[60vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/50 z-10"></div>
+    <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-5xl font-serif mb-6 drop-shadow-lg">Nos Suggestions</h1>
+      <p class="text-base md:text-xl leading-relaxed drop-shadow-md">
+        Anjou Explore vous guidera vers nos plus beaux lieux à visiter et surtout les vues à ne pas manquer !
+      </p>
     </div>
-  </div>
+  </section>
+
+  <!-- Main Content Section -->
+  <section class="py-16 md:py-20 bg-white">
+    <div class="container mx-auto px-4 max-w-4xl">
+
+      <!-- Visites de Châteaux -->
+      <div class="mb-12">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-4 flex items-center">
+          <span class="mr-3">🏰</span>
+          Les visites de Châteaux
+        </h2>
+        <p class="text-base md:text-lg text-[var(--color-anjou-brown)] leading-relaxed">
+          Montreuil-Bellay, Brézé, Saumur, Abbaye de Fontevraud
+        </p>
+      </div>
+
+      <!-- Visites de caves -->
+      <div class="mb-12">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-4 flex items-center">
+          <span class="mr-3">🍷</span>
+          Les visites de caves
+        </h2>
+        <p class="text-base md:text-lg text-[var(--color-anjou-brown)] leading-relaxed">
+          Louis de Grenelles, Château de la Durandière, Domaine de la Perruche...
+        </p>
+      </div>
+
+      <!-- Restaurants typiques -->
+      <div class="mb-12">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-4 flex items-center">
+          <span class="mr-3">🍴</span>
+          Les restaurants typiques
+        </h2>
+        <p class="text-base md:text-lg text-[var(--color-anjou-brown)] leading-relaxed">
+          Fouées, Pommes Tapées...
+        </p>
+      </div>
+
+      <!-- Visites de Musées -->
+      <div class="mb-12">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-4 flex items-center">
+          <span class="mr-3">🎨</span>
+          Les visites de Musées et autres
+        </h2>
+        <p class="text-base md:text-lg text-[var(--color-anjou-brown)] leading-relaxed">
+          Musée de la cavalerie, Musée des Blindés, Street Art...
+        </p>
+      </div>
+
+      <!-- Activités insolites -->
+      <div class="mb-12">
+        <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-gold)] mb-4 flex items-center">
+          <span class="mr-3">✨</span>
+          Les activités insolites
+        </h2>
+        <p class="text-base md:text-lg text-[var(--color-anjou-brown)] leading-relaxed">
+          Boules de fort, Cani-rando, Montgolfière, Trottinettes électriques, Accrobranche...
+        </p>
+      </div>
+
+      <!-- Note importante -->
+      <div class="bg-[var(--color-anjou-beige)] p-6 md:p-8 rounded-lg mt-12">
+        <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed mb-4">
+          Anjou Explore n'a pas vocation à être une agence de tourisme. Néanmoins notre équipe peut vous orienter dans le choix de visites ou d'activités insolites.
+        </p>
+        <p class="text-sm md:text-base text-[var(--color-anjou-brown)] leading-relaxed">
+          Elles peuvent tout à fait se programmer lors d'une de nos escapades cependant elles devront être réglées sur place auprès de chaque prestataire.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-12 bg-gradient-to-b from-white to-[var(--color-anjou-beige)]/30 text-center">
+    <div class="container mx-auto px-4">
+      <h3 class="text-xl md:text-2xl font-serif text-[var(--color-anjou-brown)] mb-4">
+        Besoin de conseils pour organiser votre escapade ?
+      </h3>
+      <p class="text-[var(--color-anjou-olive)] mb-6 max-w-2xl mx-auto">
+        Notre équipe est là pour vous guider dans vos choix
+      </p>
+      <a
+        href="/formulaire-groupe"
+        class="inline-block bg-[var(--color-anjou-gold)] text-white px-8 py-3 rounded hover:opacity-90 transition"
+      >
+        Nous contacter
+      </a>
+    </div>
+  </section>
 </Layout>
+
+<style set:html={`
+  .hero-suggestions {
+    background-image: url("${chateauImage.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile (fixed background doesn't work well on mobile) */
+  @media (max-width: 768px) {
+    .hero-suggestions {
+      background-attachment: scroll;
+    }
+  }
+`}></style>
