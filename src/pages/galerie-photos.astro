@@ -1,17 +1,269 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+// Import des images
+import heroBackground from '../assets/images/gallerie/hero-background.webp';
+import image1 from '../assets/images/gallerie/1.webp';
+import image2 from '../assets/images/gallerie/2.webp';
+import image3 from '../assets/images/gallerie/3.webp';
+import image4 from '../assets/images/gallerie/4.webp';
+import image5 from '../assets/images/gallerie/5.webp';
+import image6 from '../assets/images/gallerie/6.webp';
+
+const galleryImages = [
+  { src: image1, alt: "Aventure en Anjou 1" },
+  { src: image2, alt: "Aventure en Anjou 2" },
+  { src: image3, alt: "Aventure en Anjou 3" },
+  { src: image4, alt: "Aventure en Anjou 4" },
+  { src: image5, alt: "Aventure en Anjou 5" },
+  { src: image6, alt: "Aventure en Anjou 6" },
+];
 ---
 
-<Layout title="Galerie Photos - Anjou Explore" description="Découvrez nos plus belles escapades en images">
-  <div class="container mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold text-center mb-4">Galerie Photos</h1>
-    <p class="text-xl text-center text-gray-600 mb-12">
-      Revivez nos plus belles escapades en images
-    </p>
-
-    <!-- Le contenu sera ajouté après analyse des screenshots -->
-    <div class="text-center py-12">
-      <p class="text-gray-500">Galerie en cours de migration depuis Wix...</p>
+<Layout title="Galerie Photos - Anjou Explore" description="Découvrez en images nos aventures et escapades en Anjou">
+  <!-- Hero Section with Parallax -->
+  <section class="hero-galerie relative h-[55vh] md:h-[60vh] flex items-center justify-center text-white">
+    <div class="absolute inset-0 bg-black/40 z-10"></div>
+    <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-5xl font-serif mb-6 drop-shadow-lg">Galerie Photos</h1>
+      <p class="text-base md:text-xl leading-relaxed drop-shadow-md">
+        Revivez nos plus belles aventures à travers ces moments capturés en Anjou
+      </p>
     </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section class="py-16 md:py-20 bg-gradient-to-b from-white to-[var(--color-anjou-beige)]/30">
+    <div class="container mx-auto px-4">
+      <div class="gallery-grid">
+        {galleryImages.map((image) => (
+          <div class="gallery-item group">
+            <div class="gallery-image-wrapper">
+              <Image
+                src={image.src}
+                alt={image.alt}
+                quality={85}
+                loading="lazy"
+                format="avif"
+                class="gallery-image"
+              />
+              <div class="gallery-overlay">
+                <div class="gallery-icon">
+                  <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox Modal (hidden by default) -->
+  <div id="lightbox" class="lightbox">
+    <button id="lightbox-close" class="lightbox-close" aria-label="Fermer">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+    <button id="lightbox-prev" class="lightbox-nav lightbox-prev" aria-label="Image précédente">
+      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+    </button>
+    <img id="lightbox-image" src="" alt="" class="lightbox-image" />
+    <button id="lightbox-next" class="lightbox-nav lightbox-next" aria-label="Image suivante">
+      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </button>
   </div>
 </Layout>
+
+<style set:html={`
+  .hero-galerie {
+    background-image: url("${heroBackground.src}");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Fallback for mobile */
+  @media (max-width: 768px) {
+    .hero-galerie {
+      background-attachment: scroll;
+    }
+  }
+
+  /* Gallery Grid */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 640px) {
+    .gallery-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .gallery-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* Gallery Item */
+  .gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+
+  .gallery-item:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .gallery-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+  }
+
+  .gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .gallery-item:hover .gallery-image {
+    transform: scale(1.1);
+  }
+
+  /* Overlay */
+  .gallery-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .gallery-item:hover .gallery-overlay {
+    opacity: 1;
+  }
+
+  .gallery-icon {
+    color: white;
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+  }
+
+  .gallery-item:hover .gallery-icon {
+    transform: scale(1);
+  }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 2rem;
+  }
+
+  .lightbox.active {
+    display: flex;
+  }
+
+  .lightbox-image {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 1rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .lightbox-nav:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .lightbox-prev {
+    left: 2rem;
+  }
+
+  .lightbox-next {
+    right: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .lightbox-nav {
+      padding: 0.75rem;
+    }
+
+    .lightbox-nav svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .lightbox-prev {
+      left: 1rem;
+    }
+
+    .lightbox-next {
+      right: 1rem;
+    }
+  }
+`}></style>
+
+<script src="../scripts/galerie-photos.ts"></script>
