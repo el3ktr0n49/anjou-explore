@@ -5,6 +5,9 @@
  * Pattern recommandé par Prisma pour Next.js/Astro
  */
 
+// Charger les variables d'environnement depuis .env
+import 'dotenv/config';
+
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
@@ -13,8 +16,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 // Créer l'adapter PostgreSQL avec la connection string
-// Dans Astro, utiliser import.meta.env au lieu de process.env
-const connectionString = import.meta.env.DATABASE_URL as string;
+const connectionString = process.env.DATABASE_URL as string;
 
 // Debug: vérifier que la connection string est bien chargée
 if (!connectionString) {
