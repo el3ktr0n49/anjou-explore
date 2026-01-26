@@ -33,6 +33,10 @@ const ADMIN_SHARED_PASSWORD = process.env.ADMIN_SHARED_PASSWORD || 'dev_password
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    // Debug: vérifier les variables d'environnement
+    console.log('DATABASE_URL defined?', !!process.env.DATABASE_URL);
+    console.log('DATABASE_URL value:', process.env.DATABASE_URL?.substring(0, 20) + '...');
+
     // 1. Parser le body
     const body = await request.json();
     const { password, adminName, token2FA } = body;

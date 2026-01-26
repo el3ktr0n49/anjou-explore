@@ -5,7 +5,6 @@
  * Pattern recommandé par Prisma pour Next.js/Astro
  */
 
-import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
@@ -13,11 +12,20 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Créer le pool de connexions PostgreSQL
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Créer l'adapter PostgreSQL avec la connection string
+// Dans Astro, utiliser import.meta.env au lieu de process.env
+const connectionString = import.meta.env.DATABASE_URL as string;
 
-// Créer l'adapter PostgreSQL avec le pool
-const adapter = new PrismaPg(pool);
+// Debug: vérifier que la connection string est bien chargée
+if (!connectionString) {
+  console.error('❌ DATABASE_URL is not defined in environment variables');
+  console.error('Available env vars:', Object.keys(import.meta.env));
+  throw new Error('DATABASE_URL is required');
+}
+
+console.log('🔌 Database connection string loaded:', connectionString.replace(/:[^:@]+@/, ':****@'));
+
+const adapter = new PrismaPg({ connectionString });
 
 export const prisma =
   globalForPrisma.prisma ??
