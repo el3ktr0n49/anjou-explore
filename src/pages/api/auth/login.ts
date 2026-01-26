@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // 5. Vérifier le code 2FA
-    const is2FAValid = verify2FAToken(token2FA, admin.secret2FA);
+    const is2FAValid = await verify2FAToken(token2FA, admin.secret2FA);
 
     if (!is2FAValid) {
       return new Response(

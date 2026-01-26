@@ -4,7 +4,7 @@
  * Validation des codes TOTP (Time-based One-Time Password)
  */
 
-import { authenticator } from 'otplib';
+import { generateSecret as otplibGenerateSecret, verify, generateURI } from 'otplib';
 
 /**
  * Vérifie un code 2FA Google Authenticator
@@ -14,9 +14,9 @@ import { authenticator } from 'otplib';
  * @returns true si le code est valide, false sinon
  *
  * @example
- * verify2FAToken('123456', 'JBSWY3DPEHPK3PXP') // true ou false
+ * await verify2FAToken('123456', 'JBSWY3DPEHPK3PXP') // true ou false
  */
-export function verify2FAToken(token: string, secret: string): boolean {
+export async function verify2FAToken(token: string, secret: string): Promise<boolean> {
   try {
     // Nettoyer le token (retirer espaces, etc.)
     const cleanToken = token.replace(/\s/g, '');
@@ -27,10 +27,9 @@ export function verify2FAToken(token: string, secret: string): boolean {
     }
 
     // Vérifier avec otplib
-    return authenticator.verify({
-      token: cleanToken,
-      secret: secret,
-    });
+    // Note: verify() de la nouvelle API est asynchrone et retourne un objet avec .valid
+    const result = await verify({ token: cleanToken, secret });
+    return result.valid;
   } catch (error) {
     console.error('Erreur validation 2FA:', error);
     return false;
@@ -42,7 +41,7 @@ export function verify2FAToken(token: string, secret: string): boolean {
  * (Utilisé lors de la création initiale, voir seed.ts)
  */
 export function generateSecret(): string {
-  return authenticator.generateSecret();
+  return otplibGenerateSecret();
 }
 
 /**
@@ -53,13 +52,9 @@ export function generateSecret(): string {
  * @returns L'URI otpauth://
  */
 export function generate2FAURI(adminName: string, secret: string): string {
-  return authenticator.keyuri(adminName, 'Anjou Explore', secret);
+  return generateURI({
+    issuer: 'AnjouExplore',
+    label: adminName,
+    secret,
+  });
 }
-
-/**
- * Configuration globale d'otplib
- * (window = 1 permet une tolérance de ±30s pour la synchronisation horaire)
- */
-authenticator.options = {
-  window: 1, // Tolérance de synchronisation
-};
