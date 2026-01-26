@@ -9,10 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Ce projet est une migration d'un site Wix vers une stack moderne basée sur Astro et Bun.
 
 ### Stack Technique
-- **Framework**: Astro 5.x (SSG - Static Site Generation)
+- **Framework**: Astro 5.x (Mode hybride : SSG + Server mode pour API routes)
 - **Runtime**: Bun (au lieu de Node.js)
+- **Database**: PostgreSQL 16 (via Docker)
+- **ORM**: Prisma 7.x avec adapter PostgreSQL
 - **Styling**: TailwindCSS v4
 - **Language**: TypeScript
+- **Auth**: JWT + Google Authenticator (TOTP)
 - **Déploiement futur**: Docker/Kubernetes
 
 ### Pourquoi Astro ?
@@ -20,7 +23,9 @@ Ce projet est une migration d'un site Wix vers une stack moderne basée sur Astr
 - Performance optimale pour le SEO
 - HTML généré par défaut, JavaScript uniquement où nécessaire
 - Architecture "Islands" pour les composants interactifs
-- Facilité d'évolution vers une architecture avec API/BDD
+- **Mode hybride** : Pages statiques + API routes serveur (SSG + SSR)
+- Support natif des API endpoints pour backend (REST API)
+- Facilité d'évolution vers une architecture avec API/BDD (✅ fait)
 
 ## Commands
 
@@ -78,24 +83,35 @@ bun run db:reset                  # ⚠️ Réinitialiser la DB (supprime tout)
 ### Authentication
 
 **Système d'authentification en 3 couches :**
-1. **URL secrète** : `/admin-<code-secret>` (non indexable)
-2. **Mot de passe partagé** : Un seul mot de passe pour les 4 admins
-3. **2FA individuel** : Chaque admin a son Google Authenticator
+1. **URL secrète** : `/admin-<code-secret>` (non indexable, défini dans ADMIN_URL_SECRET)
+2. **Mot de passe partagé** : Un seul mot de passe pour les 4 admins (ADMIN_SHARED_PASSWORD)
+3. **2FA individuel** : Chaque admin a son Google Authenticator unique
 
 **Workflow de connexion :**
 ```typescript
-1. Accéder à l'URL secrète (ex: /admin-ae-2026-xyz)
-2. Entrer le mot de passe partagé
-3. Sélectionner son nom (José/Fabien/Benoît/Adrien)
-4. Entrer le code 2FA de Google Authenticator
-5. → Session JWT valide 24h
+1. Accéder à l'URL secrète (ex: /admin/login)
+2. Entrer identifiant (input texte pour sécurité, pas dropdown)
+3. Entrer le mot de passe
+4. Entrer le code 2FA à 6 chiffres
+5. → Session JWT valide 24h (cookie httpOnly + SameSite=Strict)
 ```
 
-**Admins configurés :**
+**Admins configurés (via seed.ts)** :
 - José (secret 2FA unique)
 - Fabien (secret 2FA unique)
 - Benoît (secret 2FA unique)
 - Adrien (secret 2FA unique)
+
+**Mode développement vs Production** :
+- **2FA en développement** : Peut être désactivé via `ENABLE_2FA="false"` dans .env
+- **2FA en production** : TOUJOURS activé (override de ENABLE_2FA si NODE_ENV=production)
+- **Mot de passe** : Hash bcrypt en production, plain text comparaison en dev
+
+**Implémentation** :
+```typescript
+// src/pages/api/auth/login.ts
+const is2FAEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_2FA === 'true';
+```
 
 ### Base de Données
 
@@ -237,19 +253,28 @@ await resend.emails.send({
 
 **Variables d'environnement (.env) :**
 - `DATABASE_URL` : Connexion PostgreSQL
-- `ADMIN_SHARED_PASSWORD` : Mot de passe partagé (bcrypt)
-- `JWT_SECRET` : Secret pour signer les JWT
+- `ADMIN_SHARED_PASSWORD` : Mot de passe partagé (bcrypt en prod, plain text en dev)
+- `JWT_SECRET` : Secret pour signer les JWT (min 32 caractères)
+- `JWT_EXPIRATION_HOURS` : Durée validité session (défaut : 24)
 - `ADMIN_URL_SECRET` : URL secrète admin
+- `ENABLE_2FA` : Active/désactive 2FA en dev (`"false"` en dev, override en prod)
 - `RESEND_API_KEY` : Clé API Resend
+- `EMAIL_FROM` : Email expéditeur
 - `SUMUP_API_KEY` : Clé API SumUp (à configurer)
+- `APP_URL` : URL base application
+- `NODE_ENV` : `"development"` ou `"production"`
+- `CORS_ORIGINS` : Origins autorisés (séparés par virgules)
+- `COOKIE_SECURE` : `"true"` en production avec HTTPS
 
 **Bonnes pratiques :**
-- Mots de passe hashés avec bcrypt
-- JWT avec expiration 24h
-- Cookies httpOnly + secure en production
-- Validation des inputs avec Zod
-- Rate limiting sur endpoints publics
+- Mots de passe hashés avec bcrypt (prod uniquement)
+- JWT avec expiration configurable (défaut 24h)
+- Cookies httpOnly + SameSite=Strict + Secure (prod)
+- 2FA TOUJOURS actif en production (sécurité maximale)
+- Validation des inputs avec Zod (à implémenter Phase C)
+- Rate limiting sur endpoints publics (à implémenter)
 - CORS configuré strictement
+- Sessions trackées en base de données pour audit
 
 ## Project Structure
 
@@ -423,50 +448,140 @@ import heroImage from '../assets/images/homepage/canoe.webp';
   - Hero avec parallaxe
   - Lien retour vers évènement
 
+### ✅ Backend Complet (26 janvier 2026)
+
+#### Phase A : Infrastructure Backend (✅ Complété)
+- ✅ Docker Compose (PostgreSQL 16 + pgAdmin)
+- ✅ Schéma Prisma complet (6 modèles : Admin, Event, Formula, Reservation, ContactRequest, Session)
+- ✅ Variables d'environnement (.env + .env.example)
+- ✅ Scripts de seed avec données de test (4 admins avec 2FA)
+- ✅ Documentation backend complète
+- ✅ Configuration Prisma avec PrismaPg adapter
+- ✅ Support Bun avec dotenv pour variables d'environnement
+
+#### Phase B : Authentification Admin (✅ Complété)
+- ✅ **Backend Authentication Layer** :
+  - ✅ `src/lib/db/client.ts` : Prisma client singleton avec adapter PostgreSQL
+  - ✅ `src/lib/auth/jwt.ts` : Génération/validation JWT + gestion cookies httpOnly
+  - ✅ `src/lib/auth/2fa.ts` : Validation TOTP Google Authenticator (otplib)
+  - ✅ `src/lib/auth/middleware.ts` : Middleware auth pour routes protégées
+- ✅ **API Routes** :
+  - ✅ `POST /api/auth/login` : Login 3 couches (password + adminName + 2FA)
+  - ✅ `POST /api/auth/logout` : Destroy session + cookie
+  - ✅ `GET /api/auth/verify` : Vérification session JWT
+- ✅ **Admin Pages** :
+  - ✅ `src/pages/admin/login.astro` : Login avec design élégant (gradients, animations)
+    - Input texte pour identifiant (sécurité vs dropdown)
+    - Labels génériques ("Mot de passe", "Code de vérification")
+    - Intégré au Layout principal (header + footer)
+  - ✅ `src/pages/admin/dashboard.astro` : Dashboard avec stats cards et bouton déconnexion
+- ✅ **Session Management** :
+  - JWT valide 24h avec cookies httpOnly + SameSite=Strict
+  - Tracking sessions en base de données
+  - bcrypt pour hash password en production
+- ✅ **Development Tools** :
+  - ✅ `.vscode/launch.json` : Configuration debug Bun avec VSCode
+  - ✅ `.vscode/DEBUG.md` : Guide complet debugging (breakpoints, attach, etc.)
+  - ✅ Variable `ENABLE_2FA` pour bypass 2FA en dev (toujours actif en prod)
+
+**Notes importantes Phase B** :
+- Mode serveur Astro (`output: 'server'`) requis pour API routes
+- `import 'dotenv/config'` nécessaire dans client.ts pour charger .env
+- otplib nouveau API : `verify()` retourne objet avec `.valid`
+- Validation 2FA en JavaScript (pas HTML pattern) pour UX optimale
+- Design cohérent avec thème site (or/olive/marron)
+
 ### 📋 À faire
 
-#### Phase A : Infrastructure (✅ EN COURS)
-- ✅ Docker Compose (PostgreSQL + pgAdmin)
-- ✅ Schéma Prisma (6 modèles)
-- ✅ Variables d'environnement (.env)
-- ✅ Scripts de seed et initialisation
-- ✅ Documentation backend
+#### Phase C : Dashboard Fonctionnel (EN COURS)
 
-#### Phase B : Authentification Admin
-- [ ] Page login admin (`/admin-<secret>`)
-- [ ] API `/api/auth/login` (mot de passe + 2FA)
-- [ ] Middleware JWT pour routes protégées
-- [ ] UI pour scanner QR codes Google Authenticator
-- [ ] Session management avec cookies httpOnly
+**Objectif** : Rendre le dashboard opérationnel avec gestion des demandes de contact et réservations
 
-#### Phase C : Dashboard Admin
-- [ ] Page admin principale (dashboard)
-- [ ] Liens de navigation admin
-- [ ] Affichage stats globales
-- [ ] Bouton déconnexion
+**API Endpoints à créer** :
 
-#### Phase D : Gestion Formulaires
-- [ ] Page liste demandes de contact
-- [ ] Filtres et recherche
-- [ ] Marquer comme traité/archivé
-- [ ] Export CSV
+1. **Gestion Demandes Contact** :
+   - ✅ `GET /api/admin/contacts` : Liste toutes les demandes
+     - Query params : `?status=NEW|PROCESSED|ARCHIVED`, `?isBooking=true|false`
+     - Response : `{ contacts: ContactRequest[], total: number }`
+   - ✅ `PUT /api/admin/contacts/[id]` : Mettre à jour statut
+     - Body : `{ status: string, processedBy?: string }`
+   - ✅ `DELETE /api/admin/contacts/[id]` : Archiver définitivement
 
-#### Phase E : Gestion Événements
+2. **Gestion Réservations** :
+   - ✅ `GET /api/admin/reservations` : Liste réservations
+     - Query params : `?eventId=...`, `?paymentStatus=PENDING|PAID|FAILED`
+     - Response : `{ reservations: Reservation[], total: number, totalAmount: Decimal }`
+   - ✅ `PUT /api/admin/reservations/[id]` : Mettre à jour paiement
+     - Body : `{ paymentStatus: string, sumupTransactionId?: string }`
+
+3. **Statistiques Globales** :
+   - ✅ `GET /api/admin/stats` : Stats dashboard
+     - Response : `{ contactsNew: number, reservationsTotal: number, revenuePending: Decimal, revenuePaid: Decimal }`
+
+**Pages Admin à créer** :
+
+1. **`src/pages/admin/contacts.astro`** :
+   - Tableau avec colonnes : Date | Nom | Email | Téléphone | Type | Message | Statut | Actions
+   - Filtres : Statut (NEW/PROCESSED/ARCHIVED), Type (Contact/Réservation)
+   - Actions par ligne : Marquer traité, Archiver, Voir détails
+   - Badge visuel pour demandes de réservation (isBooking=true)
+   - Pagination si > 50 résultats
+
+2. **`src/pages/admin/reservations.astro`** :
+   - Tableau : Date | Événement | Nom | Activité | Participants | Montant | Statut Paiement | Actions
+   - Filtres : Événement, Statut paiement
+   - Actions : Marquer comme payé manuellement, Voir détails
+   - Total revenue affiché en haut
+   - Export CSV des réservations
+
+3. **`src/pages/admin/dashboard.astro`** (amélioration) :
+   - Remplacer stats statiques par appel API `/api/admin/stats`
+   - Cards cliquables vers `/admin/contacts` et `/admin/reservations`
+   - Graphiques simples (Chart.js ou Recharts) pour visualiser revenus
+
+**Components à créer** :
+
+- `src/components/admin/Table.astro` : Tableau réutilisable avec tri et pagination
+- `src/components/admin/Badge.astro` : Badges de statut colorés
+- `src/components/admin/Modal.astro` : Modal pour afficher détails
+- `src/components/admin/ExportCSV.astro` : Bouton export avec logique
+
+**Sécurité** :
+- Tous les endpoints `/api/admin/*` doivent utiliser `requireAuth()` middleware
+- Validation inputs avec Zod schemas
+- Logs des actions admin (qui a marqué quoi comme traité)
+
+**Ordre d'implémentation Phase C** :
+1. API Stats (`/api/admin/stats`) + mise à jour dashboard
+2. API Contacts (`GET`, `PUT`) + page `/admin/contacts`
+3. API Réservations (`GET`, `PUT`) + page `/admin/reservations`
+4. Components réutilisables (Table, Badge, Modal)
+5. Export CSV + graphiques dashboard
+
+#### Phase D : Gestion Événements (À planifier)
 - [ ] CRUD événements (AE7, AE8...)
-- [ ] Configuration formules/tarifs
+- [ ] Configuration formules/tarifs par événement
 - [ ] Activer/désactiver paiements
-- [ ] Page de stats par événement
+- [ ] Page de stats détaillées par événement
+- [ ] API endpoints : `GET/POST/PUT/DELETE /api/admin/events/[id]`
 
-#### Phase F : Paiements SumUp
+#### Phase E : Formulaire Public & Réservations (À planifier)
+- [ ] Connecter formulaire-groupe.astro à API `/api/public/contact`
+- [ ] Page formulaire inscription événement public
+- [ ] Validation Zod côté serveur
+- [ ] Email confirmation via Resend
+
+#### Phase F : Paiements SumUp (À planifier)
 - [ ] Configuration compte SumUp
-- [ ] Page formulaire inscription événement
-- [ ] Workflow checkout SumUp
-- [ ] Webhook callback
-- [ ] Email confirmation Resend
+- [ ] Workflow checkout SumUp dans formulaire événement
+- [ ] Webhook callback `/api/webhooks/sumup`
+- [ ] Email confirmation paiement Resend
+- [ ] Gestion des remboursements
 
 #### À venir
-- Page Témoignages
-- Configuration Docker/Kubernetes (production)
+- [ ] Page Témoignages
+- [ ] Configuration Docker/Kubernetes (production)
+- [ ] Tests automatisés (Vitest)
 
 ## Important Notes
 
@@ -512,6 +627,34 @@ Composants réutilisables à extraire au fur et à mesure :
 3. **Ajout de composants** : Créer dans `src/components/` et importer où nécessaire
 4. **Ajout d'assets** : Placer dans `public/` (accessible via `/filename.ext`)
 5. **Styling** : Utiliser les classes TailwindCSS directement dans les templates
+
+## Debugging
+
+**Configuration VSCode** : `.vscode/launch.json` configuré pour Bun
+
+**Méthodes de debugging** :
+
+1. **F5 (Debug Astro Server)** :
+   - Lance `bun --inspect-wait run dev` avec pause au démarrage
+   - Breakpoints actifs dans tous les fichiers TypeScript
+   - Console interactive dans VSCode Debug Console
+
+2. **Attach to running server** :
+   - Terminal : `bun --inspect run dev`
+   - VSCode : Attach to Bun (port 9229)
+   - Utile pour ne pas redémarrer le serveur
+
+3. **Breakpoints conditionnels** :
+   - Click droit sur breakpoint → Edit Breakpoint
+   - Condition : `adminName === "José"`
+   - Hit count : `> 5`
+
+**Où placer les breakpoints** :
+- Routes API : `src/pages/api/**/*.ts` (ligne des try/catch)
+- Auth logic : `src/lib/auth/*.ts`
+- Prisma queries : Après `await prisma.*`
+
+**Voir** : [.vscode/DEBUG.md](.vscode/DEBUG.md) pour guide complet
 
 ## Future Enhancements
 
