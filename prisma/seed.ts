@@ -4,11 +4,15 @@
  * Exécuter avec: bun run db:seed
  */
 
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
-import { authenticator } from 'otplib';
+import { generateSecret, generate, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
 
-const prisma = new PrismaClient();
+const connectionString = `${process.env.DATABASE_URL}`
+
+const adapter = new PrismaPg({ connectionString })
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('🌱 Début du seed de la base de données...\n');
@@ -24,14 +28,15 @@ async function main() {
 
   for (const name of adminNames) {
     // Générer un secret unique pour Google Authenticator
-    const secret = authenticator.generateSecret();
+    const secret = generateSecret();
 
     // Créer l'URI pour le QR Code
     // Format: otpauth://totp/AnjouExplore:José?secret=XXXXX&issuer=AnjouExplore
-    const otpauth = authenticator.keyuri(
-      name,
-      'Anjou Explore',
-      secret
+    const otpauth = generateURI({
+      issuer: 'AnjouExplore',
+      label: `${name}`,
+      secret,
+    }
     );
 
     // Générer le QR Code en base64
