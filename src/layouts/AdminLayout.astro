@@ -1,0 +1,25 @@
+---
+/**
+ * Layout pour les pages admin (sans header/footer public)
+ */
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" /> <!-- Ne pas indexer les pages admin -->
+    <title>{title} - Admin</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <slot />
+  </body>
+</html>

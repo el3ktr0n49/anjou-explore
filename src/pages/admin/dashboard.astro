@@ -1,0 +1,197 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { Image } from 'astro:assets';
+import logoHeader from '../../assets/images/logo_color_250.webp';
+
+// Vérification côté serveur : rediriger si non authentifié
+// Note: Pour l'instant, la vérification se fera côté client via JS
+// Dans une version future, on pourrait utiliser Astro middleware
+---
+
+<AdminLayout title="Dashboard">
+  <div class="min-h-screen">
+    <!-- Header Admin -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <Image
+              src={logoHeader}
+              alt="Anjou Explore"
+              width={120}
+              quality={90}
+            />
+            <div>
+              <h1 class="text-xl font-serif text-[var(--color-anjou-brown)]">Administration</h1>
+              <p class="text-sm text-gray-600">Bienvenue, <span id="admin-name" class="font-semibold">...</span></p>
+            </div>
+          </div>
+
+          <button
+            id="logout-btn"
+            class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm text-gray-700"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Stats Cards (Placeholders) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Nouvelles demandes</p>
+              <p class="text-2xl font-bold text-[var(--color-anjou-gold)]">0</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Réservations en attente</p>
+              <p class="text-2xl font-bold text-[var(--color-anjou-gold)]">0</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Événements actifs</p>
+              <p class="text-2xl font-bold text-[var(--color-anjou-gold)]">1</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-serif text-[var(--color-anjou-brown)] mb-4">Actions rapides</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a
+            href="/admin/contacts"
+            class="p-4 border-2 border-gray-200 rounded-lg hover:border-[var(--color-anjou-gold)] hover:bg-[var(--color-anjou-beige)]/20 transition text-center"
+          >
+            <svg class="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            <p class="text-sm font-medium text-gray-700">Demandes de contact</p>
+            <p class="text-xs text-gray-500 mt-1">À venir</p>
+          </a>
+
+          <a
+            href="/admin/reservations"
+            class="p-4 border-2 border-gray-200 rounded-lg hover:border-[var(--color-anjou-gold)] hover:bg-[var(--color-anjou-beige)]/20 transition text-center"
+          >
+            <svg class="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <p class="text-sm font-medium text-gray-700">Réservations</p>
+            <p class="text-xs text-gray-500 mt-1">À venir</p>
+          </a>
+
+          <a
+            href="/admin/events"
+            class="p-4 border-2 border-gray-200 rounded-lg hover:border-[var(--color-anjou-gold)] hover:bg-[var(--color-anjou-beige)]/20 transition text-center"
+          >
+            <svg class="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p class="text-sm font-medium text-gray-700">Événements</p>
+            <p class="text-xs text-gray-500 mt-1">À venir</p>
+          </a>
+
+          <a
+            href="/admin/stats"
+            class="p-4 border-2 border-gray-200 rounded-lg hover:border-[var(--color-anjou-gold)] hover:bg-[var(--color-anjou-beige)]/20 transition text-center"
+          >
+            <svg class="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <p class="text-sm font-medium text-gray-700">Statistiques</p>
+            <p class="text-xs text-gray-500 mt-1">À venir</p>
+          </a>
+        </div>
+      </div>
+
+      <!-- Info Phase B -->
+      <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div class="flex items-start space-x-3">
+          <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h3 class="text-sm font-semibold text-blue-900 mb-1">Phase B : Authentification terminée</h3>
+            <p class="text-sm text-blue-800">
+              Le système d'authentification avec 2FA est opérationnel. Les prochaines phases ajouteront les fonctionnalités de gestion (contacts, réservations, événements).
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</AdminLayout>
+
+<script>
+  // Vérifier l'authentification au chargement
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/auth/verify');
+      const data = await response.json();
+
+      if (!data.authenticated) {
+        // Non authentifié → Rediriger vers login
+        window.location.href = '/admin/login';
+        return;
+      }
+
+      // Afficher le nom de l'admin
+      const adminNameEl = document.getElementById('admin-name');
+      if (adminNameEl) {
+        adminNameEl.textContent = data.admin.name;
+      }
+    } catch (error) {
+      console.error('Erreur de vérification:', error);
+      window.location.href = '/admin/login';
+    }
+  }
+
+  // Gérer la déconnexion
+  const logoutBtn = document.getElementById('logout-btn');
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    } catch (error) {
+      console.error('Erreur de déconnexion:', error);
+      // Forcer la redirection même en cas d'erreur
+      window.location.href = '/admin/login';
+    }
+  });
+
+  // Vérifier l'auth au chargement
+  checkAuth();
+</script>
