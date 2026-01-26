@@ -18,14 +18,9 @@ const globalForPrisma = globalThis as unknown as {
 // Créer l'adapter PostgreSQL avec la connection string
 const connectionString = process.env.DATABASE_URL as string;
 
-// Debug: vérifier que la connection string est bien chargée
 if (!connectionString) {
-  console.error('❌ DATABASE_URL is not defined in environment variables');
-  console.error('Available env vars:', Object.keys(import.meta.env));
-  throw new Error('DATABASE_URL is required');
+  throw new Error('DATABASE_URL is required in environment variables');
 }
-
-console.log('🔌 Database connection string loaded:', connectionString.replace(/:[^:@]+@/, ':****@'));
 
 const adapter = new PrismaPg({ connectionString });
 

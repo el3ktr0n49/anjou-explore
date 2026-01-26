@@ -33,10 +33,6 @@ const ADMIN_SHARED_PASSWORD = process.env.ADMIN_SHARED_PASSWORD || 'dev_password
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // Debug: vérifier les variables d'environnement
-    console.log('DATABASE_URL defined?', !!process.env.DATABASE_URL);
-    console.log('DATABASE_URL value:', process.env.DATABASE_URL?.substring(0, 20) + '...');
-
     // 1. Parser le body
     const body = await request.json();
     const { password, adminName, token2FA } = body;
@@ -88,15 +84,23 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // 5. Vérifier le code 2FA
-    const is2FAValid = await verify2FAToken(token2FA, admin.secret2FA);
+    // En production, le 2FA est TOUJOURS obligatoire
+    // En développement, il peut être désactivé via ENABLE_2FA=false
+    const is2FAEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_2FA === 'true';
 
-    if (!is2FAValid) {
-      return new Response(
-        JSON.stringify({
-          error: 'Code 2FA invalide',
-        }),
-        { status: 401 }
-      );
+    if (is2FAEnabled) {
+      const is2FAValid = await verify2FAToken(token2FA, admin.secret2FA);
+
+      if (!is2FAValid) {
+        return new Response(
+          JSON.stringify({
+            error: 'Code 2FA invalide',
+          }),
+          { status: 401 }
+        );
+      }
+    } else {
+      console.log('⚠️  2FA désactivé en mode développement');
     }
 
     // 6. Générer le JWT token
