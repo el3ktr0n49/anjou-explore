@@ -548,50 +548,129 @@ import heroImage from '../assets/images/homepage/canoe.webp';
 
 **Dernier commit** : `ec606d1` - feat(admin): ajoute gestion complète des demandes de contact
 
+#### Phase C : Dashboard Fonctionnel - Suite (✅ Complété - 28 janvier 2026)
+
+**Système complet de gestion des réservations avec archivage et transactions SumUp**
+
+**Nouveau Modèle de Données** :
+- ✅ **Table `PaymentTransaction`** : Historique complet des tentatives de paiement SumUp
+  - Relation 1:N avec `Reservation` (plusieurs tentatives possibles)
+  - Statuts : INITIATED, PENDING, COMPLETED, FAILED, EXPIRED, CANCELLED
+  - Conserve checkoutId, transactionId, sumupResponse (JSON), checkoutUrl
+  - Permet de tracer toutes les tentatives, même échouées
+- ✅ **Archivage logique** : Champs `archived`, `archivedAt`, `archivedBy` sur `Reservation`
+  - Soft delete pour conserver l'historique
+  - Possibilité de restaurer une réservation archivée
+  - Suppression définitive réservée en dernier recours
+
+**API Endpoints créés** :
+
+1. **Statistiques Globales** :
+   - ✅ `GET /api/admin/stats` : Stats dashboard en temps réel
+     - Response : `{ contactsNew: number, reservationsTotal: number, revenuePending: Decimal, revenuePaid: Decimal }`
+     - Requêtes parallélisées avec `Promise.all()` pour performances optimales
+
+2. **Gestion Réservations** :
+   - ✅ `GET /api/admin/reservations` : Liste réservations avec filtres multiples
+     - Query params : `?eventId=...`, `?paymentStatus=...`, `?archived=true|false`
+     - Filtre archived par défaut à `false` (affiche uniquement les actives)
+     - Inclut relations : Event (name, slug, date) + PaymentTransaction[]
+     - Response : `{ reservations: Reservation[], total: number, totalAmount: Decimal }`
+   - ✅ `PUT /api/admin/reservations/[id]` : Mettre à jour statut paiement
+     - Body : `{ paymentStatus: string, sumupTransactionId?: string, notes?: string }`
+     - **Protection intelligente** : Vérifie s'il y a des transactions SumUp actives
+     - Interdit le passage à PAID manuel si transaction INITIATED ou PENDING existe
+     - Autorise uniquement pour paiements sur place (espèces, chèque)
+   - ✅ `PATCH /api/admin/reservations/[id]` : Archiver/Désarchiver
+     - Body : `{ archived: boolean }`
+     - Enregistre date + nom admin lors de l'archivage
+   - ✅ `DELETE /api/admin/reservations/[id]` : Suppression définitive
+     - Cascade delete des PaymentTransaction associées
+
+**Pages Admin créées** :
+
+- ✅ **Dashboard dynamique** (`src/pages/admin/dashboard.astro`) :
+  - Stats cards avec API en temps réel (remplace valeurs statiques)
+  - Animation de chargement (points pulsants)
+  - Formatage euros avec `Intl.NumberFormat`
+  - 3 cards : Nouvelles demandes | Réservations | Revenus payés
+  - Lien "Réservations" actif (badge "Bientôt" retiré)
+
+- ✅ **Gestion réservations** (`src/pages/admin/reservations.astro`) :
+  - **Tableau complet** : Date | Événement | Nom | Email | Activité | Participants | Montant | Statut | Actions
+  - **Filtres** (4 colonnes) :
+    1. Statut paiement (PENDING, PAID, FAILED, REFUNDED, CANCELLED)
+    2. Événement (rempli dynamiquement avec les événements présents)
+    3. Archivage (Actives ✓ par défaut | Archivées | Toutes)
+    4. Bouton Rafraîchir
+  - **Bouton Export CSV** : Export complet de toutes les réservations filtrées
+  - **Actions intelligentes** :
+    - **Bouton "✓ Payé"** : Actif uniquement si pas de transaction SumUp en cours
+      - Tooltip explicatif si désactivé : "Paiement SumUp en cours"
+      - Tooltip actif : "Marquer comme payé manuellement (paiement sur place)"
+    - **Bouton "↩ Rembourser"** : Visible si status = PAID
+    - **Bouton "📦 Archiver"** : Visible si non archivé
+    - **Bouton "↩ Restaurer"** : Visible si archivé
+    - **Bouton "🗑 Supprimer"** : Toujours visible (double confirmation)
+  - **Double confirmation suppression** :
+    1. Premier alert : Avertissement + liste des données perdues
+    2. Second alert : Recommandation d'utiliser Archiver
+
+**Fichiers créés** :
+- `src/pages/api/admin/stats.ts` - Stats dashboard
+- `src/pages/api/admin/reservations.ts` - Endpoint GET avec filtres
+- `src/pages/api/admin/reservations/[id].ts` - Endpoints PUT, PATCH, DELETE
+- `src/pages/admin/reservations.astro` - Interface admin complète
+- `src/scripts/admin/reservations.ts` - Logique client-side TypeScript
+- `src/styles/admin/contacts.css` (MAJ) - Ajout badges paiement + btn-delete
+
+**Export CSV** :
+- Fonction `exportToCSV()` côté client
+- Génère fichier `reservations_YYYY-MM-DD.csv`
+- BOM UTF-8 (`\uFEFF`) pour compatibilité Excel
+- 12 colonnes : Date, Événement, Prénom, Nom, Email, Téléphone, Activité, Participants, Montant, Statut, Transaction ID, Date Paiement
+
+**Workflow Paiement SumUp (Préparé pour Phase F)** :
+
+```typescript
+// Scénario 1 : Paiement réussi
+Reservation (PENDING) → PaymentTransaction (INITIATED)
+→ SumUp checkout → COMPLETED → Reservation (PAID)
+
+// Scénario 2 : Échec puis réessai
+Reservation → Transaction #1 (EXPIRED)
+→ Transaction #2 (INITIATED) → COMPLETED → Reservation (PAID)
+// ✅ Historique conservé : 2 lignes dans PaymentTransaction
+
+// Scénario 3 : Paiement sur place
+Reservation (PENDING) → Aucune transaction SumUp
+→ Admin clique "✓ Payé" → Reservation (PAID)
+```
+
+**Correctifs** :
+- ✅ Bug filtre événement : Utilisait `slug` au lieu de `eventId` (UUID)
+  - Corrigé dans `populateEventFilter()` : `event.id` au lieu de `event.slug`
+
+**Sécurité & Validation** :
+- Protection passage PAID manuel si transactions SumUp actives
+- Validation Zod sur tous les query params et body
+- `credentials: 'include'` sur tous les fetch
+- Cookies httpOnly + SameSite=Strict
+- Archivage enregistre l'admin responsable
+
+**Base de Données** :
+- Schéma Prisma mis à jour (7 modèles désormais)
+- `bun run db:push` appliqué (sync DB)
+- `bun run db:generate` pour regénérer client Prisma
+- Index sur `archived` pour performances filtres
+
+**Dernier commit** : `84eb797` - feat(phase-c): système complet de gestion des réservations avec archivage et transactions SumUp
+
+---
+
 ### 📋 À faire
 
-#### Phase C : Dashboard Fonctionnel (EN COURS - Suite)
-
-**Objectif** : Compléter le dashboard avec statistiques dynamiques et gestion des réservations
-
-**API Endpoints à créer** :
-
-1. **Gestion Réservations** (table `reservations` distincte) :
-   - [ ] `GET /api/admin/reservations` : Liste réservations événements
-     - Query params : `?eventId=...`, `?paymentStatus=PENDING|PAID|FAILED`
-     - Response : `{ reservations: Reservation[], total: number, totalAmount: Decimal }`
-   - [ ] `PUT /api/admin/reservations/[id]` : Mettre à jour paiement
-     - Body : `{ paymentStatus: string, sumupTransactionId?: string }`
-
-2. **Statistiques Globales** :
-   - [ ] `GET /api/admin/stats` : Stats dashboard
-     - Response : `{ contactsNew: number, reservationsTotal: number, revenuePending: Decimal, revenuePaid: Decimal }`
-
-**Pages Admin à créer** :
-
-1. **`src/pages/admin/reservations.astro`** :
-   - Tableau : Date | Événement | Nom | Activité | Participants | Montant | Statut Paiement | Actions
-   - Filtres : Événement, Statut paiement
-   - Actions : Marquer comme payé manuellement, Voir détails
-   - Total revenue affiché en haut
-   - Export CSV des réservations
-
-2. **`src/pages/admin/dashboard.astro`** (amélioration) :
-   - Remplacer stats statiques par appel API `/api/admin/stats`
-   - Cards cliquables vers `/admin/contacts` et `/admin/reservations` (✅ déjà fait)
-   - Graphiques simples (Chart.js ou Recharts) pour visualiser revenus
-
-**Components réutilisables à créer** :
-
-- `src/components/admin/ExportCSV.astro` : Bouton export avec logique
-- Possibilité de créer : Table.astro, Badge.astro (optionnel, patterns déjà établis)
-
-**Sécurité** :
-- ✅ Tous les endpoints `/api/admin/*` utilisent `requireAuth()` middleware
-- ✅ Validation inputs avec Zod schemas
-- [ ] Logs des actions admin (qui a marqué quoi comme traité) - optionnel
-
-#### Phase D : Gestion Événements (À planifier)
+#### Phase D : Gestion Événements (Prochaine phase)
 - [ ] CRUD événements (AE7, AE8...)
 - [ ] Configuration formules/tarifs par événement
 - [ ] Activer/désactiver paiements
