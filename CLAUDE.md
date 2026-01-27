@@ -491,72 +491,105 @@ import heroImage from '../assets/images/homepage/canoe.webp';
 - Validation 2FA en JavaScript (pas HTML pattern) pour UX optimale
 - Design cohérent avec thème site (or/olive/marron)
 
+#### Phase C : Gestion des Contacts (✅ Complété - 27 janvier 2026)
+
+**Implémentation complète de la gestion des demandes de contact et réservations**
+
+**API Endpoints créés** :
+- ✅ `GET /api/admin/contacts` : Liste toutes les demandes avec filtres
+  - Query params : `?status=NEW|PROCESSED|ARCHIVED`, `?isBooking=true|false`
+  - Response : `{ contacts: ContactRequest[], total: number }`
+  - Validation Zod des paramètres
+  - Authentification requise via `requireAuth()` middleware
+- ✅ `PUT /api/admin/contacts/[id]` : Mettre à jour statut d'une demande
+  - Body : `{ status: string, processedBy?: string }`
+  - Validation Zod du body
+- ✅ `DELETE /api/admin/contacts/[id]` : Archiver définitivement une demande
+
+**Page Admin créée** :
+- ✅ `src/pages/admin/contacts.astro` : Interface complète de gestion
+  - **Tableau** : Date | Nom | Email | Téléphone | Type | Statut | Actions
+  - **Filtres** : Statut (NEW/PROCESSED/ARCHIVED), Type (Contact/Réservation)
+  - **Actions** : Bouton "👁️ Voir", "✓ Traiter", "📦 Archiver"
+  - **Système de lignes extensibles** : Clic sur 👁️ affiche le message complet dans une ligne dépliante
+    - Message complet avec formatage (white-space: pre-wrap)
+    - Données de réservation (bookingData) affichées en grid si `isBooking=true`
+    - Animation slideDown élégante
+    - Fermeture automatique de la ligne précédente
+  - **Badges visuels** : Différenciation claire entre contacts et réservations
+  - **Design** : Cohérent avec thème Anjou Explore (or/olive/marron)
+
+**Fichiers créés** :
+- `src/pages/api/admin/contacts.ts` - Endpoint GET avec filtres
+- `src/pages/api/admin/contacts/[id].ts` - Endpoints PUT et DELETE
+- `src/pages/admin/contacts.astro` - Interface admin
+- `src/scripts/admin/contacts.ts` - Logique client-side (TypeScript)
+- `src/styles/admin/contacts.css` - Styles spécifiques
+- `src/styles/admin/modal.css` - Styles réutilisables (non utilisé finalement, système de lignes préféré)
+- `scripts/seed-contacts.ts` - Script de génération de données de test
+
+**Script de seed** :
+- Commande : `bun run db:seed:contacts`
+- Génère 8 demandes de test (4 contacts simples + 4 réservations)
+- Données réalistes avec différents statuts (NEW, PROCESSED, ARCHIVED)
+- Support des bookingData pour tester l'affichage des réservations
+
+**Choix techniques importants** :
+- **Pas de modal** : Système de lignes extensibles plus simple et plus UX-friendly
+- **credentials: 'include'** : Nécessaire dans les fetch pour envoyer les cookies de session
+- **Zod validation** : `url.searchParams.get() || undefined` pour gérer les paramètres optionnels
+- **escapeHtml()** : Protection XSS sur tous les contenus utilisateur
+- **event.stopPropagation()** : Sur les liens email/tel et boutons d'action
+
+**Notes de débogage** :
+- Erreur 401 initiale résolue en ajoutant `credentials: 'include'` aux requêtes fetch
+- Modal initialement prévue, remplacée par système de lignes sur demande utilisateur
+- TypeScript exports requis pour imports Astro (`export function` au lieu de `window.x = function`)
+
+**Dernier commit** : `ec606d1` - feat(admin): ajoute gestion complète des demandes de contact
+
 ### 📋 À faire
 
-#### Phase C : Dashboard Fonctionnel (EN COURS)
+#### Phase C : Dashboard Fonctionnel (EN COURS - Suite)
 
-**Objectif** : Rendre le dashboard opérationnel avec gestion des demandes de contact et réservations
+**Objectif** : Compléter le dashboard avec statistiques dynamiques et gestion des réservations
 
 **API Endpoints à créer** :
 
-1. **Gestion Demandes Contact** :
-   - ✅ `GET /api/admin/contacts` : Liste toutes les demandes
-     - Query params : `?status=NEW|PROCESSED|ARCHIVED`, `?isBooking=true|false`
-     - Response : `{ contacts: ContactRequest[], total: number }`
-   - ✅ `PUT /api/admin/contacts/[id]` : Mettre à jour statut
-     - Body : `{ status: string, processedBy?: string }`
-   - ✅ `DELETE /api/admin/contacts/[id]` : Archiver définitivement
-
-2. **Gestion Réservations** :
-   - ✅ `GET /api/admin/reservations` : Liste réservations
+1. **Gestion Réservations** (table `reservations` distincte) :
+   - [ ] `GET /api/admin/reservations` : Liste réservations événements
      - Query params : `?eventId=...`, `?paymentStatus=PENDING|PAID|FAILED`
      - Response : `{ reservations: Reservation[], total: number, totalAmount: Decimal }`
-   - ✅ `PUT /api/admin/reservations/[id]` : Mettre à jour paiement
+   - [ ] `PUT /api/admin/reservations/[id]` : Mettre à jour paiement
      - Body : `{ paymentStatus: string, sumupTransactionId?: string }`
 
-3. **Statistiques Globales** :
-   - ✅ `GET /api/admin/stats` : Stats dashboard
+2. **Statistiques Globales** :
+   - [ ] `GET /api/admin/stats` : Stats dashboard
      - Response : `{ contactsNew: number, reservationsTotal: number, revenuePending: Decimal, revenuePaid: Decimal }`
 
 **Pages Admin à créer** :
 
-1. **`src/pages/admin/contacts.astro`** :
-   - Tableau avec colonnes : Date | Nom | Email | Téléphone | Type | Message | Statut | Actions
-   - Filtres : Statut (NEW/PROCESSED/ARCHIVED), Type (Contact/Réservation)
-   - Actions par ligne : Marquer traité, Archiver, Voir détails
-   - Badge visuel pour demandes de réservation (isBooking=true)
-   - Pagination si > 50 résultats
-
-2. **`src/pages/admin/reservations.astro`** :
+1. **`src/pages/admin/reservations.astro`** :
    - Tableau : Date | Événement | Nom | Activité | Participants | Montant | Statut Paiement | Actions
    - Filtres : Événement, Statut paiement
    - Actions : Marquer comme payé manuellement, Voir détails
    - Total revenue affiché en haut
    - Export CSV des réservations
 
-3. **`src/pages/admin/dashboard.astro`** (amélioration) :
+2. **`src/pages/admin/dashboard.astro`** (amélioration) :
    - Remplacer stats statiques par appel API `/api/admin/stats`
-   - Cards cliquables vers `/admin/contacts` et `/admin/reservations`
+   - Cards cliquables vers `/admin/contacts` et `/admin/reservations` (✅ déjà fait)
    - Graphiques simples (Chart.js ou Recharts) pour visualiser revenus
 
-**Components à créer** :
+**Components réutilisables à créer** :
 
-- `src/components/admin/Table.astro` : Tableau réutilisable avec tri et pagination
-- `src/components/admin/Badge.astro` : Badges de statut colorés
-- `src/components/admin/Modal.astro` : Modal pour afficher détails
 - `src/components/admin/ExportCSV.astro` : Bouton export avec logique
+- Possibilité de créer : Table.astro, Badge.astro (optionnel, patterns déjà établis)
 
 **Sécurité** :
-- Tous les endpoints `/api/admin/*` doivent utiliser `requireAuth()` middleware
-- Validation inputs avec Zod schemas
-- Logs des actions admin (qui a marqué quoi comme traité)
-
-**Ordre d'implémentation Phase C** :
-1. API Stats (`/api/admin/stats`) + mise à jour dashboard
-2. API Contacts (`GET`, `PUT`) + page `/admin/contacts`
-3. API Réservations (`GET`, `PUT`) + page `/admin/reservations`
-4. Components réutilisables (Table, Badge, Modal)
-5. Export CSV + graphiques dashboard
+- ✅ Tous les endpoints `/api/admin/*` utilisent `requireAuth()` middleware
+- ✅ Validation inputs avec Zod schemas
+- [ ] Logs des actions admin (qui a marqué quoi comme traité) - optionnel
 
 #### Phase D : Gestion Événements (À planifier)
 - [ ] CRUD événements (AE7, AE8...)
