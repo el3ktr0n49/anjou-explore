@@ -14,6 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "bun run prisma/seed.ts",
+    "db:seed:contacts": "bun run scripts/seed-contacts.ts",
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {
@@ -30,7 +31,8 @@
     "qrcode": "^1.5.4",
     "resend": "^6.8.0",
     "sharp": "^0.34.5",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
