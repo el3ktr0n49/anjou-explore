@@ -7,7 +7,7 @@ Placez ici tous les screenshots du site Wix original pour référence lors de la
 - [ ] Page d'accueil (/)
 - [ ] Notre Catalogue (/notre-catalogue)
 - [ ] Nos Suggestions (/nos-suggestions)
-- [ ] L'Équipe (/l-équipe)
+- [ ] L'Équipe (/equipe)
 - [ ] Galerie Photos (/galerie-photos)
 - [ ] Témoignages (/témoignages)
 - [ ] Formulaire Groupe (/formulaire-groupe)

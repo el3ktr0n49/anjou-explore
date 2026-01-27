@@ -53,7 +53,7 @@ src/
 │   ├── index.astro              # Accueil
 │   ├── notre-catalogue.astro    # Catalogue des activités
 │   ├── nos-suggestions.astro    # Suggestions
-│   ├── l-équipe.astro           # Présentation de l'équipe
+│   ├── equipe.astro           # Présentation de l'équipe
 │   ├── galerie-photos.astro     # Galerie photos
 │   ├── témoignages.astro        # Témoignages clients
 │   ├── formulaire-groupe.astro  # Formulaire de réservation
