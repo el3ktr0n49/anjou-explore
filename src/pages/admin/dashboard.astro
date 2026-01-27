@@ -43,8 +43,12 @@ import Layout from '../../layouts/Layout.astro';
           <div class="flex items-center justify-between">
             <div>
               <p class="stats-label">Nouvelles demandes</p>
-              <p class="stats-value">0</p>
-              <p class="stats-trend">Aucune en attente</p>
+              <p id="stat-contacts" class="stats-value">
+                <span class="loading-dot">•</span>
+                <span class="loading-dot">•</span>
+                <span class="loading-dot">•</span>
+              </p>
+              <p id="stat-contacts-desc" class="stats-trend">Chargement...</p>
             </div>
             <div class="stats-icon bg-blue-100">
               <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,8 +63,12 @@ import Layout from '../../layouts/Layout.astro';
           <div class="flex items-center justify-between">
             <div>
               <p class="stats-label">Réservations</p>
-              <p class="stats-value">0</p>
-              <p class="stats-trend">En attente de paiement</p>
+              <p id="stat-reservations" class="stats-value">
+                <span class="loading-dot">•</span>
+                <span class="loading-dot">•</span>
+                <span class="loading-dot">•</span>
+              </p>
+              <p id="stat-reservations-desc" class="stats-trend">Chargement...</p>
             </div>
             <div class="stats-icon bg-green-100">
               <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,17 +78,21 @@ import Layout from '../../layouts/Layout.astro';
           </div>
         </div>
 
-        <!-- Événements -->
+        <!-- Revenus -->
         <div class="stats-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="stats-label">Événements actifs</p>
-              <p class="stats-value">1</p>
-              <p class="stats-trend">AE7 en préparation</p>
+              <p class="stats-label">Revenus payés</p>
+              <p id="stat-revenue" class="stats-value">
+                <span class="loading-dot">•</span>
+                <span class="loading-dot">•</span>
+                <span class="loading-dot">•</span>
+              </p>
+              <p id="stat-revenue-desc" class="stats-trend">Chargement...</p>
             </div>
-            <div class="stats-icon bg-purple-100">
-              <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            <div class="stats-icon bg-amber-100">
+              <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
           </div>
@@ -124,7 +136,6 @@ import Layout from '../../layouts/Layout.astro';
                 <p class="action-title">Réservations</p>
                 <p class="action-desc">Gestion des inscriptions</p>
               </div>
-              <span class="action-badge">Bientôt</span>
             </a>
 
             <!-- Événements -->
@@ -159,18 +170,18 @@ import Layout from '../../layouts/Layout.astro';
       </div>
 
       <!-- Info Phase -->
-      <div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+      <div class="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
         <div class="flex items-start space-x-4">
           <div class="flex-shrink-0">
-            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-blue-900 mb-2">Phase B terminée</h3>
-            <p class="text-sm text-blue-800 leading-relaxed">
-              Le système d'authentification sécurisé est opérationnel. Les prochaines phases ajouteront
-              les fonctionnalités de gestion des contacts, réservations, événements et statistiques.
+            <h3 class="text-lg font-semibold text-green-900 mb-2">Phase C en cours</h3>
+            <p class="text-sm text-green-800 leading-relaxed">
+              Dashboard opérationnel avec statistiques dynamiques. Gestion des contacts complète.
+              Prochaine étape : interface de gestion des réservations événements.
             </p>
           </div>
         </div>
@@ -309,13 +320,42 @@ import Layout from '../../layouts/Layout.astro';
   .stats-card:nth-child(3) {
     animation-delay: 0.3s;
   }
+
+  /* Loading animation */
+  .loading-dot {
+    animation: pulse 1.5s ease-in-out infinite;
+    opacity: 0.5;
+  }
+
+  .loading-dot:nth-child(1) {
+    animation-delay: 0s;
+  }
+
+  .loading-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .loading-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 </style>
 
 <script>
   // Vérifier l'authentification au chargement
   async function checkAuth() {
     try {
-      const response = await fetch('/api/auth/verify');
+      const response = await fetch('/api/auth/verify', {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (!data.authenticated) {
@@ -329,9 +369,90 @@ import Layout from '../../layouts/Layout.astro';
       if (adminNameEl) {
         adminNameEl.textContent = data.admin.name;
       }
+
+      // Charger les statistiques une fois authentifié
+      await loadStats();
     } catch (error) {
       console.error('Erreur de vérification:', error);
       window.location.href = '/admin/login';
+    }
+  }
+
+  // Charger les statistiques du dashboard
+  async function loadStats() {
+    try {
+      const response = await fetch('/api/admin/stats', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des stats');
+      }
+
+      const stats = await response.json();
+
+      // Mettre à jour les stats de contacts
+      const contactsEl = document.getElementById('stat-contacts');
+      const contactsDescEl = document.getElementById('stat-contacts-desc');
+      if (contactsEl && contactsDescEl) {
+        contactsEl.textContent = stats.contactsNew.toString();
+        contactsDescEl.textContent =
+          stats.contactsNew === 0
+            ? 'Aucune en attente'
+            : stats.contactsNew === 1
+            ? '1 nouvelle demande'
+            : `${stats.contactsNew} nouvelles demandes`;
+      }
+
+      // Mettre à jour les stats de réservations
+      const reservationsEl = document.getElementById('stat-reservations');
+      const reservationsDescEl = document.getElementById('stat-reservations-desc');
+      if (reservationsEl && reservationsDescEl) {
+        reservationsEl.textContent = stats.reservationsTotal.toString();
+        reservationsDescEl.textContent =
+          stats.reservationsTotal === 0
+            ? 'Aucune réservation'
+            : stats.reservationsTotal === 1
+            ? '1 réservation'
+            : `${stats.reservationsTotal} réservations`;
+      }
+
+      // Mettre à jour les stats de revenus
+      const revenueEl = document.getElementById('stat-revenue');
+      const revenueDescEl = document.getElementById('stat-revenue-desc');
+      if (revenueEl && revenueDescEl) {
+        // Formater le montant en euros
+        const formattedRevenue = new Intl.NumberFormat('fr-FR', {
+          style: 'currency',
+          currency: 'EUR',
+        }).format(stats.revenuePaid);
+
+        revenueEl.textContent = formattedRevenue;
+
+        // Description avec le revenu en attente
+        if (stats.revenuePending > 0) {
+          const formattedPending = new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR',
+          }).format(stats.revenuePending);
+          revenueDescEl.textContent = `${formattedPending} en attente`;
+        } else {
+          revenueDescEl.textContent = 'Aucun paiement en attente';
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+
+      // Afficher un message d'erreur dans les stats
+      ['stat-contacts', 'stat-reservations', 'stat-revenue'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '?';
+      });
+
+      ['stat-contacts-desc', 'stat-reservations-desc', 'stat-revenue-desc'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = 'Erreur de chargement';
+      });
     }
   }
 

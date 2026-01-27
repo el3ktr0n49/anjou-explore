@@ -1,0 +1,195 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import '../../styles/admin/contacts.css';
+---
+
+<Layout title="Gestion des Réservations" description="Liste des réservations événements">
+  <!-- Hero Admin -->
+  <section class="bg-gradient-to-r from-[var(--color-anjou-gold)] via-[var(--color-anjou-olive)] to-[var(--color-anjou-brown)] py-12 text-white">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div class="flex items-center space-x-3 mb-2">
+            <a href="/admin/dashboard" class="hover:opacity-75 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+            </a>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <h1 class="text-2xl md:text-3xl font-serif">Réservations Événements</h1>
+          </div>
+          <p class="text-white/90 text-sm">
+            <span id="reservation-count">...</span> réservations •
+            <span id="total-amount">...</span> de revenus
+          </p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <button
+            id="export-csv-btn"
+            class="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            id="logout-btn"
+            class="flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
+    <div class="container mx-auto px-4 max-w-7xl">
+
+      <!-- Filtres -->
+      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
+
+        <div class="p-6">
+          <h2 class="text-xl font-serif text-[var(--color-anjou-brown)] mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+            </svg>
+            Filtres
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Filtre Statut Paiement -->
+            <div>
+              <label for="filter-payment-status" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Statut Paiement
+              </label>
+              <select id="filter-payment-status" class="filter-select">
+                <option value="">Tous les statuts</option>
+                <option value="PENDING">En attente</option>
+                <option value="PAID">Payé</option>
+                <option value="FAILED">Échoué</option>
+                <option value="REFUNDED">Remboursé</option>
+                <option value="CANCELLED">Annulé</option>
+              </select>
+            </div>
+
+            <!-- Filtre Événement (sera rempli dynamiquement) -->
+            <div>
+              <label for="filter-event" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Événement
+              </label>
+              <select id="filter-event" class="filter-select">
+                <option value="">Tous les événements</option>
+              </select>
+            </div>
+
+            <!-- Filtre Archivé -->
+            <div>
+              <label for="filter-archived" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                Archivage
+              </label>
+              <select id="filter-archived" class="filter-select">
+                <option value="false">Actives</option>
+                <option value="true">Archivées</option>
+                <option value="">Toutes</option>
+              </select>
+            </div>
+
+            <!-- Bouton Rafraîchir -->
+            <div class="flex items-end">
+              <button id="refresh-btn" class="refresh-button">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Rafraîchir
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau des réservations -->
+      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
+        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
+
+        <!-- Loading state -->
+        <div id="loading-state" class="p-8 text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[var(--color-anjou-gold)] border-t-transparent"></div>
+          <p class="text-[var(--color-anjou-olive)] mt-4">Chargement des réservations...</p>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden p-8 text-center">
+          <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          <p class="text-gray-500 text-lg">Aucune réservation</p>
+        </div>
+
+        <!-- Table -->
+        <div id="table-container" class="hidden overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-[var(--color-anjou-beige)]/30">
+              <tr>
+                <th class="table-header">Date</th>
+                <th class="table-header">Événement</th>
+                <th class="table-header">Nom</th>
+                <th class="table-header">Email</th>
+                <th class="table-header">Activité</th>
+                <th class="table-header">Participants</th>
+                <th class="table-header">Montant</th>
+                <th class="table-header">Statut</th>
+                <th class="table-header">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reservations-tbody">
+              <!-- Rows will be inserted by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</Layout>
+
+<script>
+  import {
+    loadReservations,
+    updatePaymentStatus,
+    archiveReservation,
+    deleteReservation,
+    exportToCSV
+  } from '../../scripts/admin/reservations.ts';
+
+  // Event listeners
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/admin/login';
+  });
+
+  document.getElementById('filter-payment-status')?.addEventListener('change', loadReservations);
+  document.getElementById('filter-event')?.addEventListener('change', loadReservations);
+  document.getElementById('filter-archived')?.addEventListener('change', loadReservations);
+  document.getElementById('refresh-btn')?.addEventListener('click', loadReservations);
+  document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
+
+  // Exposer les fonctions globalement pour les onclick
+  (window as any).updatePaymentStatus = updatePaymentStatus;
+  (window as any).deleteReservation = deleteReservation;
+  (window as any).archiveReservation = archiveReservation;
+
+  // Charger les réservations au chargement
+  loadReservations();
+</script>

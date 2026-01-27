@@ -119,7 +119,8 @@ model Reservation {
   amount          Decimal       @db.Decimal(10, 2)
   paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
 
-  // SumUp IDs
+  // SumUp IDs (DEPRECATED - utiliser PaymentTransaction)
+  // Gardés pour compatibilité ascendante
   sumupCheckoutId String?       @map("sumup_checkout_id")
   sumupTransactionId String?    @map("sumup_transaction_id")
 
@@ -127,13 +128,71 @@ model Reservation {
 
   // Métadonnées
   notes           String?       @db.Text // Notes internes admin
+  archived        Boolean       @default(false) // Archivage logique (soft delete)
+  archivedAt      DateTime?     @map("archived_at")
+  archivedBy      String?       @map("archived_by") // Nom de l'admin
+
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  paymentTransactions PaymentTransaction[]
 
   @@index([eventId])
   @@index([email])
   @@index([paymentStatus])
+  @@index([archived])
   @@map("reservations")
+}
+
+// ═══════════════════════════════════════════════════════════
+// TRANSACTIONS DE PAIEMENT (Historique SumUp)
+// ═══════════════════════════════════════════════════════════
+
+enum TransactionStatus {
+  INITIATED    // Transaction initialisée (checkout créé)
+  PENDING      // En attente de paiement
+  COMPLETED    // Paiement réussi
+  FAILED       // Paiement échoué
+  EXPIRED      // Checkout expiré
+  CANCELLED    // Annulé par l'utilisateur
+}
+
+model PaymentTransaction {
+  id              String            @id @default(uuid())
+  reservationId   String            @map("reservation_id")
+  reservation     Reservation       @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  // IDs SumUp
+  checkoutId      String            @map("checkout_id") // ID du checkout SumUp
+  transactionId   String?           @map("transaction_id") // ID de la transaction (si paiement effectué)
+
+  // Montant
+  amount          Decimal           @db.Decimal(10, 2)
+  currency        String            @default("EUR")
+
+  // Statut
+  status          TransactionStatus @default(INITIATED)
+
+  // Métadonnées SumUp
+  sumupResponse   Json?             @map("sumup_response") // Réponse complète de l'API SumUp
+  checkoutUrl     String?           @map("checkout_url") // URL de paiement
+
+  // Dates
+  initiatedAt     DateTime          @default(now()) @map("initiated_at")
+  completedAt     DateTime?         @map("completed_at")
+  expiredAt       DateTime?         @map("expired_at")
+
+  // Métadonnées
+  notes           String?           @db.Text
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@index([reservationId])
+  @@index([checkoutId])
+  @@index([transactionId])
+  @@index([status])
+  @@map("payment_transactions")
 }
 
 // ═══════════════════════════════════════════════════════════

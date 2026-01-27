@@ -101,6 +101,27 @@
   color: #92400e;
 }
 
+/* Badges de statut de paiement */
+.badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badge-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
 /* Action buttons */
 .action-btn {
   padding: 0.5rem 1rem;
@@ -128,6 +149,16 @@
 
 .btn-archive:hover {
   background-color: #fecaca;
+}
+
+.btn-delete {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.btn-delete:hover {
+  background-color: #fee2e2;
+  color: #991b1b;
 }
 
 .message-truncate {
