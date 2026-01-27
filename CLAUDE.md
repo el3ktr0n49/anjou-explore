@@ -666,6 +666,75 @@ Reservation (PENDING) → Aucune transaction SumUp
 
 **Dernier commit** : `84eb797` - feat(phase-c): système complet de gestion des réservations avec archivage et transactions SumUp
 
+#### Phase E : Formulaire Public & Contact (✅ Complété - 28 janvier 2026)
+
+**Connexion du formulaire `/formulaire-groupe` à l'API pour envoyer demandes de contact et réservations aventure**
+
+**Distinction importante** :
+- **ContactRequest** (Phase E) : Demande de renseignements pour aventure groupe (PAS de paiement)
+  - Simple contact OU réservation aventure avec données (participants, durée, formule)
+  - Enregistré dans table `contact_requests` avec status `NEW`
+- **Reservation** (Phase F) : Inscription événement avec paiement SumUp
+  - Enregistré dans table `reservations` avec `paymentStatus`
+
+**API Endpoint créé** :
+- ✅ `POST /api/public/contact` : Soumettre demande de contact ou réservation aventure
+  - Body : `{ name, email, phone, message, isBooking, bookingData? }`
+  - Si `isBooking = true` : bookingData requis avec `{ participants, duration, formula }`
+  - Validation Zod complète (email, champs requis, types)
+  - Insertion en base : `ContactRequest` avec status `NEW`
+  - Response : `{ success: true, contactId: string, message: string }`
+
+**Script TypeScript modifié** :
+- ✅ `src/scripts/formulaire-groupe.ts` : Envoi vers API
+  - Fetch vers `/api/public/contact` avec méthode POST
+  - Gestion des erreurs (network, validation, serveur)
+  - Messages de succès (vert) / erreur (rouge)
+  - Désactivation du bouton pendant l'envoi ("Envoi en cours...")
+  - Reset du formulaire après succès
+  - Auto-hide du message après 5 secondes
+
+**Fichiers créés** :
+- `src/pages/api/public/contact.ts` - Endpoint public de soumission
+- `PHASE_E_TEST.md` - Guide de test complet avec scénarios
+
+**Workflow Utilisateur** :
+
+```typescript
+// Scénario 1 : Contact simple
+1. Remplir nom, email, téléphone, message
+2. Ne PAS cocher "Je souhaite réserver une formule d'aventure"
+3. Cliquer "Envoyer ma demande"
+→ ContactRequest créé avec isBooking = false, bookingData = null
+
+// Scénario 2 : Réservation aventure
+1. Remplir nom, email, téléphone, message
+2. Cocher "Je souhaite réserver une formule d'aventure"
+3. Remplir participants, durée, formule
+4. Cliquer "Envoyer ma demande"
+→ ContactRequest créé avec isBooking = true, bookingData = { participants, duration, formula }
+```
+
+**Validation Zod** :
+- Email format valide
+- Champs requis non vides (name, email, phone, message)
+- Si isBooking = true → bookingData complet (participants, duration, formula)
+- Participants : nombre entier positif
+- Duration : enum ['1jour', '2jours']
+- Formula : enum ['all-inclusive', 'adventure', 'adventure-plus', 'race']
+
+**Intégration avec Phase C** :
+- Les demandes créées apparaissent immédiatement dans `/admin/contacts`
+- Badge "Contact" ou "Réservation" selon `isBooking`
+- Bouton 👁️ pour voir le message complet + bookingData (si présent)
+
+**Prochaines étapes optionnelles (hors Phase E)** :
+- Email confirmation via Resend (utilisateur + admin)
+- Validation côté client (en plus du serveur)
+- Loader/spinner pendant l'envoi
+
+**Dernier commit Phase E** : À créer
+
 ---
 
 ### 📋 À faire
@@ -676,12 +745,6 @@ Reservation (PENDING) → Aucune transaction SumUp
 - [ ] Activer/désactiver paiements
 - [ ] Page de stats détaillées par événement
 - [ ] API endpoints : `GET/POST/PUT/DELETE /api/admin/events/[id]`
-
-#### Phase E : Formulaire Public & Réservations (À planifier)
-- [ ] Connecter formulaire-groupe.astro à API `/api/public/contact`
-- [ ] Page formulaire inscription événement public
-- [ ] Validation Zod côté serveur
-- [ ] Email confirmation via Resend
 
 #### Phase F : Paiements SumUp (À planifier)
 - [ ] Configuration compte SumUp
