@@ -138,7 +138,7 @@ import '../../styles/admin/contacts.css';
 </Layout>
 
 <script>
-  import { loadContacts, toggleMessageRow, updateStatus } from '../../scripts/admin/contacts.ts';
+  import { loadContacts, toggleMessageRow, updateStatus, deleteContact } from '../../scripts/admin/contacts.ts';
 
   // Event listeners
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
@@ -153,6 +153,7 @@ import '../../styles/admin/contacts.css';
   // Exposer les fonctions globalement pour les onclick
   (window as any).toggleMessageRow = toggleMessageRow;
   (window as any).updateStatus = updateStatus;
+  (window as any).deleteContact = deleteContact;
 
   // Charger les contacts au chargement
   loadContacts();

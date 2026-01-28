@@ -154,6 +154,9 @@ function renderContacts(contacts: Contact[], total: number): void {
             `
                 : ''
             }
+            <button class="action-btn btn-delete" onclick="deleteContact('${contact.id}')" title="Supprimer définitivement">
+              🗑
+            </button>
           </div>
         </td>
       </tr>
@@ -287,6 +290,36 @@ export async function updateStatus(id: string, newStatus: string): Promise<void>
       await loadContacts();
     } else {
       showError(data.error || 'Erreur lors de la mise à jour');
+    }
+  } catch (error) {
+    console.error('Erreur:', error);
+    showError('Erreur serveur');
+  }
+}
+
+// Supprimer une demande de contact (confirmation requise)
+export async function deleteContact(id: string): Promise<void> {
+  const confirmed = confirm(
+    '⚠️ Êtes-vous sûr de vouloir SUPPRIMER DÉFINITIVEMENT cette demande ?\n\n' +
+      'Cette action est IRRÉVERSIBLE et supprimera toutes les données associées.\n\n' +
+      'Recommandation : Utilisez plutôt "Archiver" pour conserver l\'historique.'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/contacts/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Recharger les contacts
+      await loadContacts();
+    } else {
+      showError(data.error || 'Erreur lors de la suppression');
     }
   } catch (error) {
     console.error('Erreur:', error);

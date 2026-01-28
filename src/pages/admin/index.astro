@@ -1,0 +1,50 @@
+---
+/**
+ * Page /admin
+ * Redirige vers /admin/dashboard si session active
+ * Redirige vers /admin/login sinon
+ */
+---
+
+<script>
+  // Vérifier l'authentification et rediriger
+  async function checkAuthAndRedirect() {
+    try {
+      const response = await fetch('/api/auth/verify', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      if (data.authenticated) {
+        // Session active → rediriger vers dashboard
+        window.location.href = '/admin/dashboard';
+      } else {
+        // Pas de session → rediriger vers login
+        window.location.href = '/admin/login';
+      }
+    } catch (error) {
+      console.error('Erreur de vérification:', error);
+      // En cas d'erreur, rediriger vers login
+      window.location.href = '/admin/login';
+    }
+  }
+
+  // Exécuter au chargement
+  checkAuthAndRedirect();
+</script>
+
+<!-- Loading state pendant la vérification -->
+<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #4a3b2f;">
+  <div style="text-align: center;">
+    <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f5f1e8; border-top-color: #c4a571; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="margin-top: 1rem; font-size: 0.875rem; color: #6b7456;">Vérification...</p>
+  </div>
+</div>
+
+<style>
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
