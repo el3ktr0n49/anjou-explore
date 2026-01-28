@@ -258,6 +258,27 @@ import Layout from '../../layouts/Layout.astro';
   const buttonText = submitBtn?.querySelector('.button-text') as HTMLSpanElement;
   const errorMessage = document.getElementById('error-message') as HTMLDivElement;
 
+  // Vérifier si l'utilisateur est déjà connecté
+  async function checkIfAlreadyLoggedIn() {
+    try {
+      const response = await fetch('/api/auth/verify', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      if (data.authenticated) {
+        // Déjà connecté, rediriger vers le dashboard
+        window.location.href = '/admin/dashboard';
+      }
+    } catch (error) {
+      // Erreur ou pas connecté, rester sur la page de login
+      console.log('Not logged in, staying on login page');
+    }
+  }
+
+  // Exécuter la vérification au chargement
+  checkIfAlreadyLoggedIn();
+
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
