@@ -244,7 +244,7 @@ import Layout from '../../../layouts/Layout.astro';
   <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3"></div>
 </Layout>
 
-<style>
+<style is:global>
   /* Modal Styles */
   .modal {
     position: fixed;
@@ -322,17 +322,19 @@ import Layout from '../../../layouts/Layout.astro';
   /* Form Styles */
   .form-label {
     display: block;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-anjou-brown);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-anjou-olive);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
   }
 
   .form-input {
     width: 100%;
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1rem;
     background: white;
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--color-anjou-beige);
     border-radius: 0.75rem;
     font-size: 0.875rem;
     color: var(--color-anjou-brown);
@@ -342,7 +344,45 @@ import Layout from '../../../layouts/Layout.astro';
 
   .form-input:focus {
     border-color: var(--color-anjou-gold);
-    box-shadow: 0 0 0 3px rgba(196, 165, 113, 0.1);
+    box-shadow: 0 0 0 4px rgba(196, 165, 113, 0.15);
+    background: var(--color-anjou-beige)/10;
+  }
+
+  /* Display mode value styling */
+  .field-value {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-anjou-brown);
+    background: var(--color-anjou-beige)/20;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-anjou-beige);
+  }
+
+  /* Edit mode indicator */
+  .edit-mode-indicator {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 2px solid #fbbf24;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .edit-mode-indicator svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #f59e0b;
+    flex-shrink: 0;
+  }
+
+  .edit-mode-indicator p {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #92400e;
+    margin: 0;
   }
 
   /* Button Styles */
@@ -354,13 +394,14 @@ import Layout from '../../../layouts/Layout.astro';
     border-radius: 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    cursor: pointer;
+    cursor: pointer !important;
     transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(196, 165, 113, 0.25);
   }
 
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(196, 165, 113, 0.3);
+    box-shadow: 0 6px 16px rgba(196, 165, 113, 0.4);
   }
 
   .btn-secondary {
@@ -371,12 +412,14 @@ import Layout from '../../../layouts/Layout.astro';
     border-radius: 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    cursor: pointer;
+    cursor: pointer !important;
     transition: all 0.2s;
   }
 
   .btn-secondary:hover {
-    background: var(--color-anjou-beige)/30;
+    background: var(--color-anjou-olive)/10;
+    border-color: var(--color-anjou-brown);
+    color: var(--color-anjou-brown);
   }
 
   /* Activity Card */
@@ -441,11 +484,11 @@ import Layout from '../../../layouts/Layout.astro';
 
   /* Toast Styles */
   .toast {
-    min-width: 300px;
-    max-width: 500px;
-    padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    min-width: 320px;
+    max-width: 480px;
+    padding: 1rem 1.25rem;
+    border-radius: 0.875rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -454,27 +497,42 @@ import Layout from '../../../layouts/Layout.astro';
   }
 
   .toast-success {
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    border: 2px solid #059669;
+    background: white;
+    border: 2px solid #10b981;
+    border-left-width: 6px;
     color: #065f46;
   }
 
+  .toast-success .toast-icon {
+    color: #10b981;
+  }
+
   .toast-error {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    border: 2px solid #dc2626;
+    background: white;
+    border: 2px solid #ef4444;
+    border-left-width: 6px;
     color: #991b1b;
   }
 
+  .toast-error .toast-icon {
+    color: #ef4444;
+  }
+
   .toast-info {
-    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-    border: 2px solid #2563eb;
+    background: white;
+    border: 2px solid #3b82f6;
+    border-left-width: 6px;
     color: #1e40af;
+  }
+
+  .toast-info .toast-icon {
+    color: #3b82f6;
   }
 
   .toast-icon {
     flex-shrink: 0;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   .toast-message {
