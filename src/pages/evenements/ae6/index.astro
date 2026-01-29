@@ -1,11 +1,44 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import { Image } from 'astro:assets';
+import { prisma } from '../../../lib/db/client';
 
 // Import des images
 import heroBackground from '../../../assets/images/evenements/ae6/hero-background.webp';
 import logoNerleux from '../../../assets/images/evenements/ae6/logo.webp';
 import flyerImage from '../../../assets/images/evenements/ae6/flyer.webp';
+
+// Fetch event from database to check if registrations are open
+const event = await prisma.event.findUnique({
+  where: { slug: 'ae6' },
+  select: {
+    id: true,
+    name: true,
+    slug: true,
+    status: true,
+    registrationDeadline: true,
+    registrationOpenOverride: true,
+  },
+});
+
+// Check if registrations are open
+let registrationsOpen = false;
+if (event) {
+  // Override = true → always open
+  if (event.registrationOpenOverride === true) {
+    registrationsOpen = true;
+  }
+  // Override = false → always closed
+  else if (event.registrationOpenOverride === false) {
+    registrationsOpen = false;
+  }
+  // Otherwise check status + deadline
+  else {
+    registrationsOpen =
+      event.status === 'OPEN' &&
+      (!event.registrationDeadline || new Date() <= event.registrationDeadline);
+  }
+}
 ---
 
 <Layout title="Anjou Explore #6 - Evènement du 29 Mars 2025" description="Découvrez notre 6ème événement en partenariat avec le Domaine de Nerleux">
@@ -13,10 +46,22 @@ import flyerImage from '../../../assets/images/evenements/ae6/flyer.webp';
   <section class="hero-ae6 relative h-[55vh] md:h-[60vh] flex items-center justify-center text-white">
     <div class="absolute inset-0 bg-black/50 z-10"></div>
     <div class="relative z-20 text-center px-4 max-w-4xl mx-auto">
-      <!-- Badge "Évènement terminé" -->
-      <div class="inline-block bg-red-600 text-white px-6 py-2 rounded-full text-sm font-semibold mb-4 shadow-lg">
-        ⏰ Évènement terminé
-      </div>
+      <!-- Badge dynamique -->
+      {event && (
+        <div class={`inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 shadow-lg ${
+          registrationsOpen
+            ? 'bg-green-600 text-white'
+            : event.status === 'ARCHIVED'
+            ? 'bg-red-600 text-white'
+            : 'bg-orange-600 text-white'
+        }`}>
+          {registrationsOpen
+            ? '✅ Inscriptions ouvertes'
+            : event.status === 'ARCHIVED'
+            ? '⏰ Évènement terminé'
+            : '🔒 Inscriptions fermées'}
+        </div>
+      )}
       <h1 class="text-3xl md:text-5xl font-serif mb-4 drop-shadow-lg">Anjou Explore #6</h1>
       <p class="text-lg md:text-2xl font-semibold drop-shadow-md">29 Mars 2025</p>
     </div>
@@ -103,15 +148,27 @@ import flyerImage from '../../../assets/images/evenements/ae6/flyer.webp';
             </div>
           </div>
 
-          <!-- Bouton Réservation désactivé -->
+          <!-- Bouton Réservation / Inscriptions -->
           <div class="text-center">
-            <button
-              disabled
-              class="bg-gray-400 text-gray-600 px-8 py-3 rounded font-semibold cursor-not-allowed opacity-60"
-            >
-              Réservations closes
-            </button>
-            <p class="text-xs text-gray-500 mt-2">Cet événement est terminé</p>
+            {registrationsOpen ? (
+              <a
+                href="/evenements/ae6/inscriptions"
+                class="inline-block bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white px-8 py-3 rounded-lg font-semibold hover:shadow-2xl transition-all duration-300 text-lg"
+              >
+                📝 S'inscrire maintenant
+              </a>
+            ) : (
+              <div>
+                <div class="inline-block bg-red-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg mb-2">
+                  {event?.status === 'ARCHIVED' ? '⏰ Événement terminé' : '🔒 Inscriptions fermées'}
+                </div>
+                <p class="text-xs text-gray-500">
+                  {event?.status === 'ARCHIVED'
+                    ? 'Cet événement est terminé'
+                    : 'Les inscriptions ne sont pas encore ouvertes'}
+                </p>
+              </div>
+            )}
           </div>
 
           <!-- Lien vers règlement -->

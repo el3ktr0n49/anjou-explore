@@ -24,7 +24,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { z } from 'astro/zod';
 import { prisma } from '../../../lib/db/client';
 
 // Schema de validation pour les données de réservation

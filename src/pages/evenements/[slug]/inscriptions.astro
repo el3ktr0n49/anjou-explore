@@ -1,0 +1,445 @@
+---
+/**
+ * Page publique d'inscription à un événement
+ * Route: /evenements/{slug}/inscriptions
+ *
+ * Affiche un formulaire dynamique généré depuis la BDD
+ */
+
+import Layout from '../../../layouts/Layout.astro';
+import { prisma } from '../../../lib/db/client';
+
+const { slug } = Astro.params;
+
+// Fetch event with activities and pricing
+const event = await prisma.event.findUnique({
+  where: { slug },
+  include: {
+    activities: {
+      include: {
+        pricing: {
+          orderBy: {
+            price: 'asc',
+          },
+        },
+      },
+    },
+  },
+});
+
+// If event not found, redirect to 404
+if (!event) {
+  return Astro.redirect('/404');
+}
+
+// Calculate available spots for each activity
+async function getAvailableSpots(activityId: string, maxParticipants: number | null): Promise<number | null> {
+  // Si pas de limite, retourner null (illimité)
+  if (maxParticipants === null) {
+    return null;
+  }
+
+  // Compter les places réservées
+  const reservations = await prisma.reservation.findMany({
+    where: {
+      activityId: activityId,
+      paymentStatus: {
+        in: ['PENDING', 'PAID'],
+      },
+      archived: false,
+    },
+    select: {
+      participants: true,
+    },
+  });
+
+  let reservedCount = 0;
+  for (const reservation of reservations) {
+    const participants = reservation.participants as Record<string, number>;
+    for (const quantity of Object.values(participants)) {
+      reservedCount += quantity;
+    }
+  }
+
+  return maxParticipants - reservedCount;
+}
+
+// Enrichir les activités avec les places disponibles
+const activitiesWithAvailability = await Promise.all(
+  event.activities.map(async (activity) => {
+    const availableSpots = await getAvailableSpots(activity.id, activity.maxParticipants);
+    return {
+      ...activity,
+      availableSpots,
+      isFull: availableSpots !== null && availableSpots <= 0,
+    };
+  })
+);
+
+// Check if registrations are open
+function areRegistrationsOpen() {
+  // Override = true → always open
+  if (event.registrationOpenOverride === true) {
+    return true;
+  }
+
+  // Override = false → always closed
+  if (event.registrationOpenOverride === false) {
+    return false;
+  }
+
+  // Otherwise check status + deadline
+  if (event.status !== 'OPEN') {
+    return false;
+  }
+
+  if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+    return false;
+  }
+
+  return true;
+}
+
+const registrationsOpen = areRegistrationsOpen();
+
+// Format date for display
+const eventDate = new Date(event.date).toLocaleDateString('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<Layout title={`Inscriptions - ${event.name}`} description={`Inscrivez-vous à ${event.name}`}>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="max-w-4xl mx-auto px-4 py-16">
+      <h1 class="text-4xl md:text-5xl font-serif font-bold text-white text-center mb-4">
+        {event.name}
+      </h1>
+      <p class="text-xl text-white/90 text-center mb-2">
+        {eventDate}
+      </p>
+      {event.location && (
+        <p class="text-lg text-white/80 text-center">
+          📍 {event.location}
+        </p>
+      )}
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="py-12 bg-[var(--color-anjou-beige)]/20">
+    <div class="max-w-3xl mx-auto px-4">
+      {!registrationsOpen ? (
+        <!-- Inscriptions fermées -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+          <div class="w-24 h-24 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+
+          <h2 class="text-3xl font-serif font-bold text-[var(--color-anjou-brown)] mb-4">
+            Inscriptions fermées
+          </h2>
+
+          <p class="text-lg text-[var(--color-anjou-olive)] mb-8">
+            {event.status === 'CLOSED' ?
+              "Cet événement est complet." :
+              event.status === 'ARCHIVED' ?
+              "Cet événement est terminé." :
+              "Les inscriptions ne sont pas encore ouvertes."
+            }
+          </p>
+
+          <a
+            href={`/evenements/${event.slug}`}
+            class="inline-block px-8 py-3 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white font-semibold rounded-lg hover:shadow-lg transition"
+          >
+            Retour à l'événement
+          </a>
+        </div>
+      ) : (
+        <!-- Formulaire d'inscription -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+          <h2 class="text-3xl font-serif font-bold text-[var(--color-anjou-brown)] mb-2 text-center">
+            Inscription
+          </h2>
+
+          {event.description && (
+            <p class="text-[var(--color-anjou-olive)] mb-8 text-center">
+              {event.description}
+            </p>
+          )}
+
+          <!-- Message de succès/erreur (hidden par défaut) -->
+          <div id="form-message" class="hidden mb-6"></div>
+
+          <form id="inscription-form" class="space-y-6">
+            <!-- Informations personnelles -->
+            <div class="pb-6 border-b border-[var(--color-anjou-beige)]">
+              <h3 class="text-xl font-serif font-semibold text-[var(--color-anjou-brown)] mb-4">
+                Vos informations
+              </h3>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label for="prenom" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                    Prénom <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="prenom"
+                    name="prenom"
+                    required
+                    class="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label for="nom" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                    Nom <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="nom"
+                    name="nom"
+                    required
+                    class="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label for="email" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                    Email <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    class="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label for="telephone" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
+                    Téléphone <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    id="telephone"
+                    name="telephone"
+                    required
+                    pattern="[0-9]{10}"
+                    placeholder="0612345678"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Sélection activité -->
+            <div class="pb-6 border-b border-[var(--color-anjou-beige)]">
+              <h3 class="text-xl font-serif font-semibold text-[var(--color-anjou-brown)] mb-4">
+                Choisissez votre activité
+              </h3>
+
+              {activitiesWithAvailability.map((activity) => (
+                <div class={`activity-section mb-6 last:mb-0 ${activity.isFull ? 'activity-full' : ''}`} data-activity-id={activity.id}>
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                      <h4 class={`text-lg font-semibold ${activity.isFull ? 'text-gray-500' : 'text-[var(--color-anjou-brown)]'}`}>
+                        {activity.name}
+                        {activity.isFull && (
+                          <span class="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded-full">
+                            Complet
+                          </span>
+                        )}
+                      </h4>
+                      {activity.description && (
+                        <p class={`text-sm mt-1 ${activity.isFull ? 'text-gray-400' : 'text-[var(--color-anjou-olive)]'}`}>
+                          {activity.description}
+                        </p>
+                      )}
+                      {activity.maxParticipants !== null && (
+                        <div class="flex items-center gap-2 mt-1">
+                          <p class={`text-xs ${activity.isFull ? 'text-gray-400' : 'text-[var(--color-anjou-olive)]'}`}>
+                            Limité à {activity.maxParticipants} participants
+                          </p>
+                          {activity.isFull && (
+                            <span class="text-xs text-red-600 font-semibold">
+                              • Plus de places disponibles
+                            </span>
+                          )}
+                          {!activity.isFull && activity.availableSpots !== null && activity.availableSpots <= 10 && (
+                            <span class="text-xs text-orange-600 font-semibold">
+                              • Plus que {activity.availableSpots} place{activity.availableSpots > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="grid md:grid-cols-2 gap-4">
+                    {activity.pricing.map((price) => (
+                      <div class={`pricing-item rounded-lg p-4 ${activity.isFull ? 'bg-gray-100' : 'bg-[var(--color-anjou-beige)]/20'}`}>
+                        <label class={`flex items-center justify-between ${activity.isFull ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <div class="flex-1">
+                            <p class={`font-medium ${activity.isFull ? 'text-gray-500' : 'text-[var(--color-anjou-brown)]'}`}>
+                              {price.label}
+                            </p>
+                            <p class={`text-2xl font-bold mt-1 ${activity.isFull ? 'text-gray-400' : 'text-[var(--color-anjou-gold)]'}`}>
+                              {parseFloat(price.price.toString()).toFixed(2)}€
+                            </p>
+                          </div>
+
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value="0"
+                            data-pricing-id={price.id}
+                            data-price={price.price.toString()}
+                            data-activity-id={activity.id}
+                            disabled={activity.isFull}
+                            class={`quantity-input w-20 px-3 py-2 border-2 rounded-lg text-center font-semibold ${
+                              activity.isFull
+                                ? 'bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'border-[var(--color-anjou-gold)]'
+                            }`}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <!-- Total -->
+            <div class="bg-gradient-to-r from-[var(--color-anjou-gold)]/10 to-[var(--color-anjou-olive)]/10 rounded-xl p-6">
+              <div class="flex items-center justify-between">
+                <span class="text-2xl font-serif font-bold text-[var(--color-anjou-brown)]">
+                  Total
+                </span>
+                <span id="total-amount" class="text-4xl font-bold text-[var(--color-anjou-gold)]">
+                  0.00€
+                </span>
+              </div>
+
+              <p id="participants-summary" class="text-sm text-[var(--color-anjou-olive)] mt-2 text-right">
+                Aucun participant sélectionné
+              </p>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              id="submit-btn"
+              class="w-full py-4 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white text-lg font-bold rounded-lg hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span id="submit-text">Réserver</span>
+            </button>
+
+            <p class="text-xs text-[var(--color-anjou-olive)] text-center">
+              En soumettant ce formulaire, vous acceptez nos conditions générales.
+            </p>
+          </form>
+        </div>
+      )}
+
+      <!-- Back Link -->
+      <div class="text-center mt-8">
+        <a
+          href={`/evenements/${event.slug}`}
+          class="inline-flex items-center text-[var(--color-anjou-olive)] hover:text-[var(--color-anjou-brown)] transition"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Retour à l'événement
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero-section {
+    background: linear-gradient(135deg, var(--color-anjou-olive), var(--color-anjou-gold));
+    position: relative;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--color-anjou-beige);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+    scroll-margin-top: 100px; /* Offset for fixed header */
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-anjou-gold);
+    box-shadow: 0 0 0 3px var(--color-anjou-gold)/20;
+  }
+
+  .quantity-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-anjou-gold)/30;
+  }
+
+  .activity-section {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-anjou-beige);
+  }
+
+  .activity-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .activity-section.activity-full {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .activity-section.activity-full .pricing-item {
+    background: #f3f4f6 !important;
+  }
+
+  .quantity-input:disabled {
+    cursor: not-allowed;
+  }
+
+  .form-message-success {
+    padding: 1rem;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border: 2px solid #059669;
+    color: #065f46;
+    border-radius: 0.75rem;
+    font-weight: 500;
+  }
+
+  .form-message-error {
+    padding: 1rem;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border: 2px solid #dc2626;
+    color: #991b1b;
+    border-radius: 0.75rem;
+    font-weight: 500;
+  }
+</style>
+
+<!-- Pass event data to JavaScript -->
+<script define:vars={{ eventSlug: event.slug }}>
+  // Make eventSlug available globally for the external script
+  window.eventSlug = eventSlug;
+</script>
+
+<script src="../../../scripts/inscription-event.ts"></script>

@@ -73,82 +73,280 @@ async function main() {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 2. CRÉATION D'UN ÉVÉNEMENT DE TEST (AE7)
+  // 2. CRÉATION DES ÉVÉNEMENTS
   // ═══════════════════════════════════════════════════════════
 
-  console.log('\n🎪 Création d\'un événement de test (AE7)...');
+  console.log('\n🎪 Création des événements...');
 
+  // AE6 - Événement passé (2025)
+  const ae6 = await prisma.event.upsert({
+    where: { slug: 'ae6' },
+    update: {},
+    create: {
+      name: 'Anjou Explore #6',
+      slug: 'ae6',
+      description: 'Édition 2025 au Domaine de Nerleux',
+      date: new Date('2025-06-14'),
+      status: 'CLOSED',
+      paymentEnabled: true,
+      registrationDeadline: new Date('2025-06-07'),
+      registrationOpenOverride: false, // Forcé fermé
+      location: 'Domaine de Nerleux, Varennes-sur-Loire',
+      partnerLogo: '/images/partners/nerleux.png',
+    },
+  });
+
+  console.log(`  ✓ Événement "${ae6.name}" créé (${ae6.slug}) - CLOSED`);
+
+  // AE7 - Événement futur (2026)
   const ae7 = await prisma.event.upsert({
     where: { slug: 'ae7' },
     update: {},
     create: {
       name: 'Anjou Explore #7',
       slug: 'ae7',
-      description: 'Événement test pour validation du système',
-      date: new Date('2026-06-15'),
-      status: 'DRAFT',
-      paymentEnabled: false,
-      maxParticipants: 100,
-      location: 'Lieu à définir',
+      description: 'Nouvelle édition 2026 avec parcours inédits',
+      date: new Date('2026-06-20'),
+      status: 'OPEN',
+      paymentEnabled: true,
+      registrationDeadline: new Date('2026-06-13'),
+      registrationOpenOverride: null, // Mode auto (géré par deadline)
+      location: 'À confirmer',
     },
   });
 
-  console.log(`  ✓ Événement "${ae7.name}" créé (${ae7.slug})`);
+  console.log(`  ✓ Événement "${ae7.name}" créé (${ae7.slug}) - OPEN`);
 
   // ═══════════════════════════════════════════════════════════
-  // 3. CRÉATION DES FORMULES POUR AE7
+  // 3. CRÉATION DES ACTIVITÉS ET TARIFS POUR AE6
   // ═══════════════════════════════════════════════════════════
 
-  console.log('\n💰 Création des formules/tarifs pour AE7...');
+  console.log('\n🏃 Création des activités pour AE6...');
 
-  const formulas = [
-    {
-      activityName: 'rando papilles',
+  // Activité 1 : Rando Papilles (AE6)
+  const ae6RandoPapilles = await prisma.activity.upsert({
+    where: {
+      eventId_name: {
+        eventId: ae6.id,
+        name: 'rando papilles',
+      },
+    },
+    update: {},
+    create: {
+      eventId: ae6.id,
+      name: 'rando papilles',
+      description: 'Randonnée gourmande avec dégustation de produits locaux',
+      maxParticipants: 50,
+    },
+  });
+
+  console.log(`  ✓ Activité "${ae6RandoPapilles.name}" créée (max ${ae6RandoPapilles.maxParticipants} places)`);
+
+  // Tarifs Rando Papilles AE6
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae6RandoPapilles.id,
+        priceType: 'adulte',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae6RandoPapilles.id,
       priceType: 'adulte',
       label: 'Adulte (+16 ans)',
+      price: 45,
+    },
+  });
+
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae6RandoPapilles.id,
+        priceType: 'enfant',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae6RandoPapilles.id,
+      priceType: 'enfant',
+      label: 'Enfant (6-15 ans)',
       price: 25,
     },
-    {
-      activityName: 'rando papilles',
-      priceType: 'enfant',
-      label: 'Enfant (-16 ans)',
-      price: 15,
+  });
+
+  console.log(`    - Adulte: 45€ | Enfant: 25€`);
+
+  // Activité 2 : Le Défi (AE6)
+  const ae6Defi = await prisma.activity.upsert({
+    where: {
+      eventId_name: {
+        eventId: ae6.id,
+        name: 'le défi',
+      },
     },
-    {
-      activityName: 'le défi',
+    update: {},
+    create: {
+      eventId: ae6.id,
+      name: 'le défi',
+      description: 'Parcours sportif avec défis et énigmes',
+      maxParticipants: 30,
+    },
+  });
+
+  console.log(`  ✓ Activité "${ae6Defi.name}" créée (max ${ae6Defi.maxParticipants} places)`);
+
+  // Tarifs Le Défi AE6
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae6Defi.id,
+        priceType: 'adulte',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae6Defi.id,
       priceType: 'adulte',
       label: 'Adulte (+16 ans)',
+      price: 50,
+    },
+  });
+
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae6Defi.id,
+        priceType: 'enfant',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae6Defi.id,
+      priceType: 'enfant',
+      label: 'Enfant (6-15 ans)',
       price: 30,
     },
-    {
-      activityName: 'le défi',
-      priceType: 'enfant',
-      label: 'Enfant (-16 ans)',
-      price: 18,
-    },
-  ];
+  });
 
-  for (const formula of formulas) {
-    await prisma.formula.upsert({
-      where: {
-        eventId_activityName_priceType: {
-          eventId: ae7.id,
-          activityName: formula.activityName,
-          priceType: formula.priceType,
-        },
-      },
-      update: {},
-      create: {
-        eventId: ae7.id,
-        ...formula,
-      },
-    });
-
-    console.log(`  ✓ ${formula.activityName} - ${formula.label}: ${formula.price}€`);
-  }
+  console.log(`    - Adulte: 50€ | Enfant: 30€`);
 
   // ═══════════════════════════════════════════════════════════
-  // 4. CRÉATION D'UNE RÉSERVATION DE TEST
+  // 4. CRÉATION DES ACTIVITÉS ET TARIFS POUR AE7
+  // ═══════════════════════════════════════════════════════════
+
+  console.log('\n🏃 Création des activités pour AE7...');
+
+  // Activité 1 : Rando Papilles (AE7)
+  const ae7RandoPapilles = await prisma.activity.upsert({
+    where: {
+      eventId_name: {
+        eventId: ae7.id,
+        name: 'rando papilles',
+      },
+    },
+    update: {},
+    create: {
+      eventId: ae7.id,
+      name: 'rando papilles',
+      description: 'Randonnée gourmande avec dégustation de produits locaux',
+      maxParticipants: 60,
+    },
+  });
+
+  console.log(`  ✓ Activité "${ae7RandoPapilles.name}" créée (max ${ae7RandoPapilles.maxParticipants} places)`);
+
+  // Tarifs Rando Papilles AE7
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae7RandoPapilles.id,
+        priceType: 'adulte',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae7RandoPapilles.id,
+      priceType: 'adulte',
+      label: 'Adulte (+16 ans)',
+      price: 48,
+    },
+  });
+
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae7RandoPapilles.id,
+        priceType: 'enfant',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae7RandoPapilles.id,
+      priceType: 'enfant',
+      label: 'Enfant (6-15 ans)',
+      price: 28,
+    },
+  });
+
+  console.log(`    - Adulte: 48€ | Enfant: 28€`);
+
+  // Activité 2 : Le Défi (AE7)
+  const ae7Defi = await prisma.activity.upsert({
+    where: {
+      eventId_name: {
+        eventId: ae7.id,
+        name: 'le défi',
+      },
+    },
+    update: {},
+    create: {
+      eventId: ae7.id,
+      name: 'le défi',
+      description: 'Parcours sportif avec défis et énigmes',
+      maxParticipants: 40,
+    },
+  });
+
+  console.log(`  ✓ Activité "${ae7Defi.name}" créée (max ${ae7Defi.maxParticipants} places)`);
+
+  // Tarifs Le Défi AE7
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae7Defi.id,
+        priceType: 'adulte',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae7Defi.id,
+      priceType: 'adulte',
+      label: 'Adulte (+16 ans)',
+      price: 55,
+    },
+  });
+
+  await prisma.eventPricing.upsert({
+    where: {
+      activityId_priceType: {
+        activityId: ae7Defi.id,
+        priceType: 'enfant',
+      },
+    },
+    update: {},
+    create: {
+      activityId: ae7Defi.id,
+      priceType: 'enfant',
+      label: 'Enfant (6-15 ans)',
+      price: 35,
+    },
+  });
+
+  console.log(`    - Adulte: 55€ | Enfant: 35€`);
+
+  // ═══════════════════════════════════════════════════════════
+  // 5. CRÉATION D'UNE RÉSERVATION DE TEST
   // ═══════════════════════════════════════════════════════════
 
   console.log('\n📝 Création d\'une réservation de test...');
@@ -165,15 +363,15 @@ async function main() {
         adulte: 2,
         enfant: 1,
       },
-      amount: 65, // 2*25 + 1*15
+      amount: 124, // 2*48 + 1*28 = 124€ (tarifs AE7)
       paymentStatus: 'PENDING',
     },
   });
 
-  console.log('  ✓ Réservation test créée pour Jean Dupont');
+  console.log('  ✓ Réservation test créée pour Jean Dupont (AE7 - Rando Papilles)');
 
   // ═══════════════════════════════════════════════════════════
-  // 5. CRÉATION D'UNE DEMANDE DE CONTACT DE TEST
+  // 6. CRÉATION D'UNE DEMANDE DE CONTACT DE TEST
   // ═══════════════════════════════════════════════════════════
 
   console.log('\n✉️  Création d\'une demande de contact de test...');

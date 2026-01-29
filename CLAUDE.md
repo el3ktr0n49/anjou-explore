@@ -737,16 +737,621 @@ Reservation (PENDING) → Aucune transaction SumUp
 
 ---
 
+#### Phase D : Gestion Événements et Inscriptions (✅ Complété - 29 janvier 2026)
+
+**Système complet de gestion des événements avec interface admin et API CRUD pour activités et tarifs**
+
+**Objectif** : Créer un système complet pour gérer les événements (AE7, AE8...) et permettre les inscriptions publiques avec formulaire dynamique généré depuis la base de données.
+
+**Architecture de Données** :
+
+La Phase D introduit une nouvelle structure normalisée pour gérer les événements, activités et tarifs :
+
+```
+Event (ex: AE7)
+  └─ Activity (ex: "rando papilles", "le défi")
+      └─ EventPricing (ex: "adulte 45€", "enfant 25€")
+```
+
+**Nouvelle Structure Prisma** :
+
+```typescript
+// ========================================
+// ÉVÉNEMENTS
+// ========================================
+model Event {
+  id                        String      @id @default(uuid())
+  name                      String      // "Anjou Explore #7"
+  slug                      String      @unique // "ae7"
+  date                      DateTime    // Date de l'événement
+  status                    EventStatus @default(DRAFT)
+  paymentEnabled            Boolean     @default(false)
+
+  // Gestion des inscriptions
+  registrationDeadline      DateTime?   // Date limite auto-close (optionnel)
+  registrationOpenOverride  Boolean?    // true = forcer ouvert, false = forcer fermé, null = auto
+
+  // Informations complémentaires
+  description               String?     // Description courte
+  location                  String?     // Lieu événement
+
+  // Relations
+  activities                Activity[]
+  reservations              Reservation[]
+
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+enum EventStatus {
+  DRAFT      // En préparation (non visible sur site)
+  OPEN       // Publié et visible sur site
+  CLOSED     // Terminé (visible mais inscriptions fermées)
+  ARCHIVED   // Masqué du site
+}
+
+// ========================================
+// ACTIVITÉS (nouveau modèle)
+// ========================================
+model Activity {
+  id                String         @id @default(uuid())
+  eventId           String
+  event             Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name              String         // "rando papilles", "le défi"
+  description       String?        // Description optionnelle
+  maxParticipants   Int?           // Limite totale pour cette activité (tous tarifs confondus)
+
+  // Relations
+  pricing           EventPricing[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([eventId, name]) // Pas de doublon activité par événement
+}
+
+// ========================================
+// TARIFICATION (renommé de "Formula")
+// ========================================
+model EventPricing {
+  id          String   @id @default(uuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  priceType   String   // "adulte", "enfant", "étudiant", etc.
+  label       String   // "Adulte (+16 ans)"
+  price       Decimal  @db.Decimal(10, 2)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([activityId, priceType]) // Pas de doublon type par activité
+}
+```
+
+**Exemple concret AE6** :
+- Event : "Anjou Explore #6" (slug: ae6)
+  - Activity 1 : "rando papilles" (max 50 places)
+    - EventPricing 1 : adulte, 45€
+    - EventPricing 2 : enfant, 25€
+  - Activity 2 : "le défi" (max 30 places)
+    - EventPricing 3 : adulte, 50€
+    - EventPricing 4 : enfant, 30€
+
+**Logique d'Ouverture/Fermeture des Inscriptions** :
+
+```typescript
+// Priorité 1 : Override manuel (si défini)
+if (event.registrationOpenOverride === true) return "OUVERT";
+if (event.registrationOpenOverride === false) return "FERMÉ";
+
+// Priorité 2 : Deadline automatique (si définie)
+if (event.registrationDeadline) {
+  if (Date.now() > event.registrationDeadline) return "FERMÉ";
+}
+
+// Priorité 3 : Status événement
+if (event.status !== "OPEN") return "FERMÉ";
+
+return "OUVERT";
+```
+
+**Workflow Inscription Utilisateur** :
+
+1. Utilisateur visite `/evenements/ae7`
+2. Page recherche en BDD un Event avec `slug = "ae7"`
+   - Si aucun → Pas de bouton inscriptions
+   - Si trouvé → Vérifie si inscriptions ouvertes (logique ci-dessus)
+3. Si ouvert → Affiche bouton "Réservations" vers `/evenements/ae7/inscriptions`
+4. Page `/evenements/[slug]/inscriptions.astro` (dynamique) :
+   - Récupère Event + Activities + EventPricing depuis BDD
+   - Génère formulaire dynamique :
+     - Dropdown : Choix activité
+     - Inputs number : Nombre adultes, enfants
+     - Calcul total en temps réel (côté client, informatif)
+   - Champs utilisateur : nom, prénom, email, téléphone
+5. Soumission → `POST /api/public/reservations/create`
+6. Backend :
+   - Reçoit : `{ eventSlug, nom, prenom, email, telephone, items: [{ eventPricingId, quantity }] }`
+   - Récupère les prix depuis BDD (recalcul côté serveur, sécurité anti-Postman)
+   - Vérifie capacité restante de l'activité
+   - Crée Reservation (status PENDING)
+   - Retourne `{ reservationId, amount }`
+7. Suite → Workflow SumUp (Phase F)
+
+**Plan d'Implémentation (6 étapes)** :
+
+**Étape 1 : Migration Base de Données** ✅
+- ✅ Créer modèle `Activity` dans schema.prisma
+- ✅ Renommer `Formula` en `EventPricing`
+- ✅ Modifier `EventPricing` : remplacer `eventId` par `activityId`
+- ✅ Ajouter champs sur `Event` : `registrationDeadline`, `registrationOpenOverride`, `description`, `location`
+- ✅ Migration Prisma : `bun run db:push` (dev)
+- ✅ Seed data : Créer AE6 + AE7 avec activités + tarifs
+- ✅ Régénérer client Prisma : `bun run db:generate`
+
+**Étape 2 : Interface Admin `/admin/events`** ✅
+- ✅ Page liste `/admin/events` :
+  - Tableau : Événement | Date | Statut | Activités | Réservations | Actions
+  - Bouton "Créer événement" (lien vers `/admin/events/new`)
+  - Actions : Voir (👁️) | Supprimer (🗑️)
+  - Filtre par statut (DRAFT, OPEN, CLOSED, ARCHIVED)
+  - Système de toast notifications (succès/erreur/info)
+  - Modale de confirmation stylée pour suppressions
+- ✅ Page détails `/admin/events/[id]` :
+  - Section 1 : Infos générales avec formulaire éditable
+    - Nom, slug, date, status, paiements activés, location
+    - Bouton "✏️ Modifier" avec modal d'édition
+  - Section 2 : Statistiques événement
+    - Participants inscrits par activité
+    - Revenus (PENDING + PAID)
+    - Places restantes par activité
+  - Section 3 : Gestion activités (CRUD complet)
+    - Cartes visuelles avec bordures et ombres
+    - Pour chaque activité : nom, description, max participants
+    - Actions : Modifier (✏️) | Supprimer (🗑️)
+    - Modal "➕ Nouvelle activité"
+  - Section 4 : Gestion tarifs par activité (CRUD inline)
+    - Liste des tarifs par activité avec prix
+    - Actions : Ajouter tarif (➕) | Supprimer tarif (✕)
+    - Validation temps réel
+- ✅ Design cohérent avec `/admin/contacts` et `/admin/reservations`
+
+**Étape 3 : API Admin Événements** ✅
+- ✅ `GET /api/admin/events` - Liste événements (avec filtre status optionnel)
+- ✅ `GET /api/admin/events/[id]` - Détails événement (inclut activities + pricing + _count.reservations)
+- ✅ `PUT /api/admin/events/[id]` - Modifier événement (validation Zod)
+- ✅ `DELETE /api/admin/events/[id]` - Supprimer événement (bloqué si réservations existent)
+- ✅ `POST /api/admin/events/[eventId]/activities` - Créer activité
+- ✅ `PUT /api/admin/events/[eventId]/activities/[id]` - Modifier activité
+- ✅ `DELETE /api/admin/events/[eventId]/activities/[id]` - Supprimer activité (cascade pricing)
+- ✅ `POST /api/admin/events/[eventId]/activities/[activityId]/pricing` - Créer tarif
+- ✅ `DELETE /api/admin/events/[eventId]/pricing/[id]` - Supprimer tarif
+- ✅ `GET /api/admin/events/[id]/stats` - Statistiques détaillées événement
+- ✅ Authentification requise sur tous les endpoints (middleware requireAuth)
+
+**Étape 4 : Page Publique Inscriptions** ✅
+- ✅ Créer `/evenements/[slug]/inscriptions.astro` (route dynamique)
+- ✅ Fetch Event + Activities + EventPricing depuis BDD (mode server)
+- ✅ Logique d'ouverture/fermeture inscriptions (deadline + override)
+- ✅ Si fermé : Afficher message "Inscriptions fermées" avec icône et bouton retour
+- ✅ Si ouvert : Afficher formulaire dynamique :
+  - Liste activités générées depuis BDD (pas dropdown)
+  - Inputs quantity par EventPricing (adulte, enfant, etc.)
+  - Calcul total en temps réel (JavaScript)
+  - Champs : nom, prénom, email, téléphone
+  - Bouton "Réserver" (désactivé si total = 0)
+- ✅ Script TypeScript `src/scripts/inscription-event.ts` pour soumission formulaire
+- ✅ Design cohérent avec thème Anjou Explore (gradients or/olive, cartes élégantes)
+- ✅ **UX Capacités** :
+  - Calcul places disponibles serveur-side avec `getAvailableSpots()`
+  - Activités complètes grisées (opacity 0.6, pointer-events none)
+  - Badge rouge "Complet" + message "Plus de places disponibles"
+  - Alerte orange "Plus que X places" si ≤ 10 places restantes
+  - `maxParticipants = null` → Illimité (pas de message capacité)
+  - Inputs désactivés pour activités complètes
+- ✅ Validation HTML5 avec `scroll-margin-top: 100px` (offset menu fixe)
+- ✅ Messages succès/erreur avec scroll automatique
+
+**Étape 5 : API Publique Réservations** ✅
+- ✅ `POST /api/public/reservations/create` :
+  - Body : `{ eventSlug, nom, prenom, email, telephone, items: [{ eventPricingId, quantity }] }`
+  - Validation Zod complète (email, champs requis, items min/max)
+  - Récupération Event depuis slug avec activities + pricing
+  - Vérification inscriptions ouvertes (status + deadline + override)
+  - **Recalcul montant côté serveur** (sécurité anti-manipulation)
+  - **Vérification capacité restante** via `getReservedCount(activityId)`
+    - Compte réservations PENDING + PAID (exclut FAILED/REFUNDED/CANCELLED)
+    - Agrégation JSON `participants` pour total par activité
+    - Retour erreur 409 si capacité dépassée avec détails
+  - Si capacité OK : Créer Reservation (status PENDING)
+  - Retour : `{ success: true, reservationId, amount }`
+- ✅ Gestion erreurs détaillées :
+  - 404 : Événement introuvable
+  - 403 : Inscriptions fermées
+  - 400 : Données invalides (Zod validation)
+  - 409 : Capacité dépassée (avec nb places disponibles)
+  - 500 : Erreur serveur
+
+**Étape 6 : Intégration Pages Événements Existantes** ✅
+- ✅ Modifier `/evenements/ae6/index.astro` :
+  - Recherche Event avec `slug = "ae6"` en BDD (select minimal)
+  - Badge dynamique selon statut :
+    - Vert "✅ Inscriptions ouvertes" si ouvert
+    - Orange "🔒 Inscriptions fermées" si status !== OPEN
+    - Rouge "⏰ Événement terminé" si status = ARCHIVED
+  - Si ouvert : Bouton gradient "📝 S'inscrire maintenant" (lien vers `/evenements/ae6/inscriptions`)
+  - Si fermé : Bouton rouge désactivé avec message explicatif
+- ✅ Pattern extensible pour futurs événements (AE7, AE8...)
+- ✅ Bouton stylisé cohérent avec design Anjou Explore (gradient or/olive, hover shadow)
+
+---
+
+**Implémentation Complète des Étapes 1-3** :
+
+**Fichiers créés** :
+```
+src/pages/api/admin/
+├── events/
+│   ├── index.ts                          # GET /api/admin/events
+│   ├── [id].ts                           # GET/PUT/DELETE /api/admin/events/[id]
+│   ├── [id]/
+│   │   ├── activities.ts                 # POST /api/admin/events/[id]/activities
+│   │   ├── activities/[id].ts            # PUT/DELETE activité
+│   │   ├── pricing/
+│   │   │   ├── [activityId].ts           # POST tarif
+│   │   │   └── [id].ts                   # DELETE tarif
+│   │   └── stats.ts                      # GET /api/admin/events/[id]/stats
+
+src/pages/admin/
+├── events/
+│   ├── index.astro                       # Liste événements
+│   └── [id].astro                        # Détails/édition événement
+
+src/scripts/admin/
+├── events.ts                             # Logique liste événements
+└── event-details.ts                      # Logique page détails
+```
+
+**Système Toast & Confirmation (Remplacement alert/confirm)** :
+
+Phase D a introduit un système complet de notifications UX pour remplacer les popups natifs du navigateur :
+
+1. **Toast Notifications** (`showToast()`) :
+   - Types : `success` (vert), `error` (rouge), `info` (bleu)
+   - Auto-dismiss après 5 secondes
+   - Animation slide-in depuis la droite
+   - Bouton fermeture manuelle (✕)
+   - Container fixe en haut à droite (z-index 60)
+   - Icônes SVG inline par type
+   - Protection XSS via `escapeHtml()`
+
+2. **Confirmation Modal** (`showConfirm()`) :
+   - Promise-based : `const confirmed = await showConfirm(message, details)`
+   - Modal avec overlay semi-transparent
+   - Affichage liste de détails optionnelle (ex: "Supprimera : activités, tarifs...")
+   - Boutons stylisés : Annuler (gris) | Confirmer (rouge)
+   - Fermeture via X, Annuler, ou clic overlay
+   - Design cohérent avec thème Anjou Explore
+
+**Pattern d'utilisation** :
+```typescript
+// Avant (alert/confirm natifs)
+if (confirm('Voulez-vous supprimer ?')) {
+  try {
+    await fetch(...);
+    alert('Supprimé !');
+  } catch (error) {
+    alert('Erreur');
+  }
+}
+
+// Après (toast/confirm stylés)
+const confirmed = await showConfirm(
+  'Voulez-vous vraiment supprimer l\'activité "rando papilles" ?',
+  ['Tous les tarifs associés', 'Les données ne pourront pas être récupérées']
+);
+if (!confirmed) return;
+
+try {
+  const response = await fetch('/api/admin/events/[id]/activities/[activityId]', {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (!response.ok) throw new Error('Erreur serveur');
+
+  showToast('Activité supprimée avec succès', 'success');
+  await loadEvent();
+} catch (error) {
+  showToast(error.message || 'Erreur lors de la suppression', 'error');
+}
+```
+
+**Choix techniques importants** :
+
+1. **Data attributes vs onclick inline** :
+   - Astro TypeScript modules ne sont pas exposés au scope global
+   - Solution : `data-action="delete-event"` + `addEventListener()` après render
+   ```typescript
+   // Render HTML avec data-attributes
+   <button data-action="delete-event" data-event-id="${event.id}">🗑️</button>
+
+   // Attach listeners après render
+   function attachEventListeners() {
+     document.querySelectorAll('[data-action="delete-event"]').forEach(btn => {
+       btn.addEventListener('click', () => {
+         const eventId = btn.dataset.eventId;
+         deleteEvent(eventId);
+       });
+     });
+   }
+   ```
+
+2. **Protection suppression événements** :
+   - Vérifie `_count.reservations` côté serveur
+   - Bloque suppression si réservations existent
+   - Message clair : "X réservation(s) existent. Archivez-les d'abord."
+
+3. **Stats événement en temps réel** :
+   - Endpoint dédié `/api/admin/events/[id]/stats`
+   - Agrégation Prisma pour participants et revenus
+   - Calcul places restantes : `maxParticipants - totalReserved`
+
+4. **Cascade deletes** :
+   - DELETE Event → Cascade Activities → Cascade EventPricing
+   - Gestion propre avec `onDelete: Cascade` dans schema Prisma
+
+**Design & UX** :
+
+- **Cards activités** : Bordures dorées, ombres légères, gradient background
+- **Séparation visuelle** : Margin + border-bottom entre activités
+- **Loading states** : États loading/empty/table gérés proprement
+- **Filtres** : Dropdown status avec "Tous" par défaut
+- **Badges status** : DRAFT (gris), OPEN (vert), CLOSED (orange), ARCHIVED (rouge)
+
+**Validation Zod** :
+
+Tous les endpoints utilisent Zod pour validation :
+```typescript
+const createActivitySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  maxParticipants: z.number().int().positive().optional()
+});
+
+const body = createActivitySchema.parse(await request.json());
+```
+
+**Fichiers à Créer** :
+```
+prisma/
+  └── migrations/XXXXXX_add_activity_and_refactor_pricing/  # Migration SQL
+
+src/pages/
+  ├── api/
+  │   └── admin/
+  │       └── events/
+  │           ├── index.ts                    # GET/POST événements
+  │           ├── [id].ts                     # GET/PUT/DELETE événement
+  │           ├── [id]/
+  │           │   ├── activities.ts           # POST activité
+  │           │   └── activities/[activityId].ts  # PUT/DELETE activité
+  │           └── pricing/
+  │               ├── [activityId].ts         # POST tarif
+  │               └── [pricingId].ts          # PUT/DELETE tarif
+  ├── admin/
+  │   └── events/
+  │       ├── index.astro                     # Liste événements
+  │       ├── create.astro                    # Créer événement
+  │       └── [id].astro                      # Détails/édition événement
+  └── evenements/
+      └── [slug]/
+          └── inscriptions.astro              # Formulaire inscription dynamique
+
+src/scripts/
+  ├── admin/
+  │   └── events.ts                           # Logique admin événements
+  └── inscription-event.ts                    # Logique formulaire inscription public
+
+src/styles/
+  └── admin/
+      └── events.css                          # Styles admin événements (optionnel)
+
+src/lib/
+  └── services/
+      ├── eventService.ts                     # Business logic événements
+      └── registrationService.ts              # Business logic inscriptions
+```
+
+**Sécurité Calcul Montant** :
+
+```typescript
+// ❌ MAUVAIS : Frontend envoie le montant
+POST /api/public/reservations/create
+Body: { amount: 45 }  // ⚠️ Utilisateur peut tricher avec Postman
+
+// ✅ BON : Frontend envoie les IDs, backend recalcule
+POST /api/public/reservations/create
+Body: {
+  items: [
+    { eventPricingId: "uuid-adulte", quantity: 2 },  // Backend récupère prix 45€
+    { eventPricingId: "uuid-enfant", quantity: 1 }   // Backend récupère prix 25€
+  ]
+}
+// Backend calcule : (2 × 45) + (1 × 25) = 115€
+```
+
+**Notes Techniques Importantes** :
+
+1. **Relation Event → Reservation** :
+   - `Reservation.activityName` (String) reste pour l'instant
+   - Envisager migration vers `Reservation.activityId` (relation) dans une future phase
+
+2. **Contraintes unicité** :
+   - `Event.slug` : Unique (pour routing)
+   - `Activity` : Unique par `[eventId, name]`
+   - `EventPricing` : Unique par `[activityId, priceType]`
+
+3. **Cascade deletes** :
+   - Supprimer Event → Supprime Activities → Supprime EventPricing
+   - Protège l'intégrité référentielle
+
+4. **Vérification capacité** :
+```typescript
+// Compter places réservées pour une activité
+const reservedCount = await prisma.reservation.aggregate({
+  where: {
+    eventId: event.id,
+    activityName: activity.name,  // ⚠️ String pour l'instant
+    paymentStatus: { in: ['PENDING', 'PAID'] }  // Ignorer FAILED/CANCELLED
+  },
+  _sum: {
+    // Sommer participants.adulte + participants.enfant
+  }
+});
+
+if (activity.maxParticipants && reservedCount >= activity.maxParticipants) {
+  throw new Error('Activité complète');
+}
+```
+
+**Tests utilisateur réussis** :
+- ✅ Liste événements avec filtres
+- ✅ Création/modification/suppression événements
+- ✅ Gestion activités (CRUD complet)
+- ✅ Gestion tarifs (CRUD complet)
+- ✅ Protection suppression si réservations existent
+- ✅ Stats événement en temps réel
+- ✅ Toast notifications et modales de confirmation
+
+**Notes de débogage** :
+- Problème initial : modales s'ouvraient automatiquement au chargement
+  - Cause : `display: flex` de `.modal` surclassait `.hidden`
+  - Fix : `.modal.hidden { display: none !important; }`
+- Problème curseur : résolu avec `cursor: pointer !important;`
+- Handlers onclick inline ne fonctionnaient pas (scope TypeScript module)
+  - Fix : Pattern data-attributes + addEventListener()
+
+---
+
+**Implémentation Complète des Étapes 4-6** :
+
+**Workflow Utilisateur Complet** :
+
+1. L'utilisateur visite `/evenements/ae6`
+2. Badge dynamique indique si inscriptions ouvertes/fermées/terminées
+3. Si ouvert : Clic sur "S'inscrire maintenant" → `/evenements/ae6/inscriptions`
+4. Formulaire affiche activités depuis BDD avec calcul temps réel
+5. Activités complètes sont **automatiquement grisées** (UX proactive)
+6. Alerte orange si moins de 10 places restantes
+7. Validation HTML5 avec scroll offset (menu fixe)
+8. Soumission → API vérifie capacité restante en temps réel
+9. Si OK : Création Reservation (PENDING) + message succès
+10. Si KO : Message d'erreur détaillé (capacité, validation, etc.)
+
+**Fichiers créés** :
+```
+src/pages/
+  ├── evenements/
+  │   └── [slug]/
+  │       └── inscriptions.astro            # Formulaire public inscriptions
+  ├── api/
+  │   └── public/
+  │       └── reservations/
+  │           └── create.ts                 # POST création réservation
+
+src/scripts/
+  └── inscription-event.ts                  # Logique client-side formulaire
+
+PHASE_D_TESTS.md                            # Guide de test complet (7 tests)
+```
+
+**Gestion Intelligente des Capacités** :
+
+**Calcul Serveur-Side** (`getAvailableSpots()`) :
+```typescript
+async function getAvailableSpots(activityId: string, maxParticipants: number | null): Promise<number | null> {
+  // Si pas de limite, retourner null (illimité)
+  if (maxParticipants === null) return null;
+
+  // Compter réservations PENDING + PAID
+  const reservations = await prisma.reservation.findMany({
+    where: {
+      activityId: activityId,
+      paymentStatus: { in: ['PENDING', 'PAID'] },
+      archived: false,
+    },
+    select: { participants: true },
+  });
+
+  // Agréger JSON participants
+  let reservedCount = 0;
+  for (const reservation of reservations) {
+    const participants = reservation.participants as Record<string, number>;
+    for (const quantity of Object.values(participants)) {
+      reservedCount += quantity;
+    }
+  }
+
+  return maxParticipants - reservedCount;
+}
+```
+
+**UX Visuel Proactif** :
+- `activity.isFull` : Badge rouge "Complet" + message "Plus de places disponibles"
+- `activity.availableSpots <= 10` : Alerte orange "Plus que X places"
+- `activity.isFull = true` :
+  - Opacity 0.6 sur toute la card
+  - `pointer-events: none` (aucune interaction)
+  - Inputs désactivés (attribute `disabled`)
+  - Textes et prix en gris
+  - Background cartes tarifs gris clair
+- JavaScript skip inputs disabled lors du calcul total
+
+**Protection Multi-Niveaux** :
+
+1. **UX (Préventif)** : Activités complètes grisées + inputs disabled
+2. **Client-side** : Skip disabled inputs dans calcul total
+3. **API (Sécurité)** : Vérification capacité avant création Reservation
+4. **Database** : Transactions atomiques (future amélioration possible)
+
+**Tests utilisateur réussis** :
+- ✅ Badge dynamique selon statut événement (OPEN/CLOSED/ARCHIVED)
+- ✅ Formulaire généré dynamiquement depuis BDD
+- ✅ Calcul total en temps réel
+- ✅ Validation HTML5 avec scroll offset
+- ✅ Création réservation avec recalcul serveur
+- ✅ Vérification capacité (erreur 409 si dépassement)
+- ✅ **UX capacités** : Graying out, badges, alertes
+- ✅ `maxParticipants = null` → Illimité (pas de restrictions)
+- ✅ Inscriptions fermées bloquent formulaire
+- ✅ Réservations apparaissent dans `/admin/reservations`
+
+**Correctifs appliqués** :
+- Scroll offset : CSS `scroll-margin-top: 100px` au lieu de JavaScript
+- Champs rouges au chargement : Suppression règle CSS `:invalid`
+- Erreur 500 API : Fix requête Prisma `activityId` direct (relation manquante)
+  - User a ajouté relation Activity ↔ Reservation dans schema
+  - `bun run db:push` + `bun run db:generate` appliqués
+
+**Guide de Test Complet** :
+- `PHASE_D_TESTS.md` : 7 tests détaillés avec scénarios
+  - Test 1 : Activer inscriptions
+  - Test 2 : Vérifier page AE6
+  - Test 3 : Page inscriptions
+  - Test 4 : Soumission formulaire (3 sous-tests)
+  - Test 5 : Capacités (5 sous-tests : limité, alerte, complet, illimité, API)
+  - Test 6 : Fermeture inscriptions
+  - Test 7 : Vérification admin
+
+**Dernier commit Phase D** : À créer - Suggestion : `feat(phase-d): système complet inscriptions publiques avec UX capacités proactive`
+
+---
+
 ### 📋 À faire
 
-#### Phase D : Gestion Événements (Prochaine phase)
-- [ ] CRUD événements (AE7, AE8...)
-- [ ] Configuration formules/tarifs par événement
-- [ ] Activer/désactiver paiements
-- [ ] Page de stats détaillées par événement
-- [ ] API endpoints : `GET/POST/PUT/DELETE /api/admin/events/[id]`
-
-#### Phase F : Paiements SumUp (À planifier)
+#### Phase F : Paiements SumUp (Après Phase D)
 - [ ] Configuration compte SumUp
 - [ ] Workflow checkout SumUp dans formulaire événement
 - [ ] Webhook callback `/api/webhooks/sumup`

@@ -1,0 +1,543 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Détails de l'événement" description="Gestion d'un événement">
+  <!-- Hero Admin -->
+  <section class="bg-gradient-to-r from-[var(--color-anjou-gold)] via-[var(--color-anjou-olive)] to-[var(--color-anjou-brown)] py-12 text-white">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div class="flex-1">
+          <div class="flex items-center space-x-3 mb-2">
+            <a href="/admin/events" class="hover:opacity-75 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+            </a>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <h1 id="event-name" class="text-2xl md:text-3xl font-serif">Chargement...</h1>
+          </div>
+          <p id="event-subtitle" class="text-white/90 text-sm">
+            ...
+          </p>
+        </div>
+
+        <button
+          id="logout-btn"
+          class="flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span>Déconnexion</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
+    <div class="container mx-auto px-4 max-w-7xl">
+
+      <!-- Loading state -->
+      <div id="loading-state" class="text-center py-16">
+        <div class="inline-flex items-center space-x-2 text-[var(--color-anjou-olive)]">
+          <svg class="animate-spin h-8 w-8" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-lg font-medium">Chargement de l'événement...</span>
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <div id="main-content" class="hidden space-y-8">
+
+        <!-- Informations générales de l'événement -->
+        <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
+          <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
+          <div class="p-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-serif text-[var(--color-anjou-brown)] flex items-center">
+                <svg class="w-6 h-6 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Informations générales
+              </h2>
+              <button
+                id="edit-event-btn"
+                class="px-4 py-2 bg-[var(--color-anjou-gold)] text-white rounded-lg hover:shadow-lg transition font-medium text-sm"
+              >
+                ✏️ Modifier
+              </button>
+            </div>
+
+            <!-- Display Mode -->
+            <div id="event-display" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Content will be filled by JS -->
+            </div>
+
+            <!-- Edit Mode -->
+            <form id="event-edit-form" class="hidden space-y-6">
+              <!-- Form fields will be filled by JS -->
+            </form>
+          </div>
+        </div>
+
+        <!-- Liste des activités -->
+        <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
+          <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
+          <div class="p-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-serif text-[var(--color-anjou-brown)] flex items-center">
+                <svg class="w-6 h-6 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+                Activités & Tarifs
+              </h2>
+              <button
+                id="add-activity-btn"
+                class="px-4 py-2 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white rounded-lg hover:shadow-lg transition font-medium text-sm"
+              >
+                ➕ Nouvelle activité
+              </button>
+            </div>
+
+            <!-- Activities list -->
+            <div id="activities-container" class="space-y-6">
+              <!-- Activities will be rendered here -->
+            </div>
+
+            <!-- Empty state -->
+            <div id="activities-empty" class="hidden text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-[var(--color-anjou-olive)]/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+              </svg>
+              <p class="text-sm text-[var(--color-anjou-olive)]">Aucune activité pour cet événement</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
+          <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
+          <div class="p-8">
+            <h2 class="text-2xl font-serif text-[var(--color-anjou-brown)] mb-6 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              Statistiques
+            </h2>
+
+            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- Stats will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Modal: Create/Edit Activity -->
+  <div id="activity-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="activity-modal-title" class="text-xl font-serif text-[var(--color-anjou-brown)]">Nouvelle activité</h3>
+        <button id="activity-modal-close" class="modal-close">✕</button>
+      </div>
+      <form id="activity-form" class="modal-body space-y-4">
+        <input type="hidden" id="activity-id" />
+
+        <div>
+          <label for="activity-name" class="form-label">Nom de l'activité</label>
+          <input type="text" id="activity-name" class="form-input" placeholder="Ex: rando papilles" required />
+        </div>
+
+        <div>
+          <label for="activity-description" class="form-label">Description (optionnel)</label>
+          <textarea id="activity-description" class="form-input" rows="3" placeholder="Description de l'activité"></textarea>
+        </div>
+
+        <div>
+          <label for="activity-max-participants" class="form-label">Nombre maximum de participants (optionnel)</label>
+          <input type="number" id="activity-max-participants" class="form-input" min="1" placeholder="Ex: 50" />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="activity-cancel-btn" class="btn-secondary">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add/Edit Pricing -->
+  <div id="pricing-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="pricing-modal-title" class="text-xl font-serif text-[var(--color-anjou-brown)]">Nouveau tarif</h3>
+        <button id="pricing-modal-close" class="modal-close">✕</button>
+      </div>
+      <form id="pricing-form" class="modal-body space-y-4">
+        <input type="hidden" id="pricing-id" />
+        <input type="hidden" id="pricing-activity-id" />
+
+        <div>
+          <label for="pricing-type" class="form-label">Type de tarif</label>
+          <input type="text" id="pricing-type" class="form-input" placeholder="Ex: adulte, enfant" required />
+        </div>
+
+        <div>
+          <label for="pricing-label" class="form-label">Libellé</label>
+          <input type="text" id="pricing-label" class="form-input" placeholder="Ex: Adulte (+16 ans)" required />
+        </div>
+
+        <div>
+          <label for="pricing-price" class="form-label">Prix (€)</label>
+          <input type="number" id="pricing-price" class="form-input" step="0.01" min="0" placeholder="Ex: 45.00" required />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="pricing-cancel-btn" class="btn-secondary">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmation -->
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content max-w-md">
+      <div class="modal-header border-b-2 border-red-200">
+        <h3 class="text-xl font-serif text-red-700 flex items-center">
+          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          Confirmation
+        </h3>
+        <button id="confirm-modal-close" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message" class="text-[var(--color-anjou-brown)] mb-6"></p>
+        <div id="confirm-details" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+          <p class="text-sm text-red-700 font-semibold mb-2">Cette action supprimera :</p>
+          <ul id="confirm-details-list" class="text-sm text-red-600 list-disc list-inside space-y-1"></ul>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button id="confirm-cancel-btn" class="btn-secondary">Annuler</button>
+          <button id="confirm-ok-btn" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3"></div>
+</Layout>
+
+<style>
+  /* Modal Styles */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .modal.hidden {
+    display: none !important;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    position: relative;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 32rem;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-anjou-beige);
+  }
+
+  .modal-close {
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer !important;
+    font-size: 1.5rem;
+    color: var(--color-anjou-olive);
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover {
+    color: var(--color-anjou-brown);
+    transform: scale(1.1);
+  }
+
+  /* Ensure all buttons have pointer cursor */
+  button {
+    cursor: pointer;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-anjou-beige);
+  }
+
+  /* Form Styles */
+  .form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-anjou-brown);
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-anjou-brown);
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: var(--color-anjou-gold);
+    box-shadow: 0 0 0 3px rgba(196, 165, 113, 0.1);
+  }
+
+  /* Button Styles */
+  .btn-primary {
+    padding: 0.625rem 1.5rem;
+    background: linear-gradient(135deg, var(--color-anjou-gold), var(--color-anjou-olive));
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(196, 165, 113, 0.3);
+  }
+
+  .btn-secondary {
+    padding: 0.625rem 1.5rem;
+    background: white;
+    color: var(--color-anjou-olive);
+    border: 2px solid var(--color-anjou-olive);
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-anjou-beige)/30;
+  }
+
+  /* Activity Card */
+  .activity-card {
+    border: 2px solid var(--color-anjou-beige);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(to bottom, white, var(--color-anjou-beige)/5);
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .activity-card:hover {
+    border-color: var(--color-anjou-gold);
+    box-shadow: 0 6px 16px rgba(196, 165, 113, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .activity-card:not(:last-child) {
+    margin-bottom: 2rem;
+    border-bottom: 3px solid var(--color-anjou-gold);
+  }
+
+  /* Status Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .badge-draft { background: #f3f4f6; color: #6b7280; }
+  .badge-open { background: #d1fae5; color: #065f46; }
+  .badge-closed { background: #fee2e2; color: #991b1b; }
+  .badge-archived { background: #e0e7ff; color: #3730a3; }
+
+  /* Stat Card */
+  .stat-card {
+    background: var(--color-anjou-beige)/20;
+    border: 2px solid var(--color-anjou-beige);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-anjou-brown);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--color-anjou-olive);
+  }
+
+  /* Toast Styles */
+  .toast {
+    min-width: 300px;
+    max-width: 500px;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideIn 0.3s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .toast-success {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border: 2px solid #059669;
+    color: #065f46;
+  }
+
+  .toast-error {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border: 2px solid #dc2626;
+    color: #991b1b;
+  }
+
+  .toast-info {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 2px solid #2563eb;
+    color: #1e40af;
+  }
+
+  .toast-icon {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .toast-message {
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .toast-close {
+    flex-shrink: 0;
+    padding: 0.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .toast-close:hover {
+    opacity: 1;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  .toast.slide-out {
+    animation: slideOut 0.3s ease forwards;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .activity-card {
+    animation: fadeIn 0.3s ease backwards;
+  }
+</style>
+
+<script src="../../../scripts/admin/event-details.ts"></script>

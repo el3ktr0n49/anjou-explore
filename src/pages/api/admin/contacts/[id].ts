@@ -13,7 +13,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { z } from 'astro/zod';
 import { prisma } from '../../../../lib/db/client';
 import { requireAuth } from '../../../../lib/auth/middleware';
 

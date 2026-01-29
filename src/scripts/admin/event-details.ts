@@ -1,0 +1,1083 @@
+/**
+ * Script TypeScript pour les détails d'un événement (/admin/events/[id])
+ * - Affichage et édition des informations de l'événement
+ * - Gestion des activités (CRUD)
+ * - Gestion des tarifs (CRUD)
+ * - Statistiques
+ */
+
+// Types
+interface Event {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  date: string;
+  status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'ARCHIVED';
+  paymentEnabled: boolean;
+  registrationDeadline: string | null;
+  registrationOpenOverride: boolean | null;
+  location: string | null;
+  partnerLogo: string | null;
+  activities: Activity[];
+  reservations: Reservation[];
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  description: string | null;
+  maxParticipants: number | null;
+  pricing: Pricing[];
+  stats?: {
+    totalParticipants: number;
+    placesRestantes: number | null;
+    totalRevenue: number;
+    reservationsCount: number;
+  };
+}
+
+interface Pricing {
+  id: string;
+  priceType: string;
+  label: string;
+  price: string;
+}
+
+interface Reservation {
+  id: string;
+  participants: Record<string, number>;
+  activityName: string;
+  paymentStatus: string;
+  amount: string;
+}
+
+// State
+let event: Event | null = null;
+let eventId: string | null = null;
+let isEditingEvent = false;
+let currentActivityId: string | null = null;
+let currentPricingId: string | null = null;
+
+// ═══════════════════════════════════════════════════════════
+// Authentication & Initialization
+// ═══════════════════════════════════════════════════════════
+
+async function checkAuth() {
+  try {
+    const response = await fetch('/api/auth/verify', {
+      credentials: 'include',
+    });
+    const data = await response.json();
+
+    if (!data.authenticated) {
+      window.location.href = '/admin/login';
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur de vérification:', error);
+    window.location.href = '/admin/login';
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// API Functions
+// ═══════════════════════════════════════════════════════════
+
+async function loadEvent() {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du chargement de l\'événement');
+    }
+
+    const data = await response.json();
+    event = data.event;
+
+    // Update UI
+    renderEvent();
+    renderActivities();
+    renderStats();
+
+    // Hide loading, show content
+    document.getElementById('loading-state')?.classList.add('hidden');
+    document.getElementById('main-content')?.classList.remove('hidden');
+  } catch (error) {
+    console.error('Erreur:', error);
+    showToast('Erreur lors du chargement de l\'événement', 'error');
+    setTimeout(() => {
+      window.location.href = '/admin/events';
+    }, 2000);
+  }
+}
+
+async function updateEvent(data: Partial<Event>) {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la mise à jour');
+    }
+
+    showToast('Événement mis à jour avec succès', 'success');
+    await loadEvent();
+    isEditingEvent = false;
+    renderEvent();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la mise à jour', 'error');
+  }
+}
+
+async function createActivity(data: { name: string; description?: string; maxParticipants?: number }) {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/activities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la création');
+    }
+
+    showToast('Activité créée avec succès', 'success');
+    await loadEvent();
+    closeActivityModal();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la création', 'error');
+  }
+}
+
+async function updateActivity(activityId: string, data: Partial<Activity>) {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/activities/${activityId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la mise à jour');
+    }
+
+    showToast('Activité mise à jour avec succès', 'success');
+    await loadEvent();
+    closeActivityModal();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la mise à jour', 'error');
+  }
+}
+
+async function deleteActivity(activityId: string, activityName: string) {
+  const confirmed = await showConfirm(
+    `Voulez-vous vraiment supprimer l'activité "${activityName}" ?`,
+    ['Tous les tarifs associés', 'Les données ne pourront pas être récupérées']
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/activities/${activityId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la suppression');
+    }
+
+    showToast('Activité supprimée avec succès', 'success');
+    await loadEvent();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la suppression', 'error');
+  }
+}
+
+async function createPricing(activityId: string, data: { priceType: string; label: string; price: number }) {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/activities/${activityId}/pricing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la création');
+    }
+
+    showToast('Tarif créé avec succès', 'success');
+    await loadEvent();
+    closePricingModal();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la création', 'error');
+  }
+}
+
+async function updatePricing(pricingId: string, data: Partial<Pricing>) {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/pricing/${pricingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la mise à jour');
+    }
+
+    showToast('Tarif mis à jour avec succès', 'success');
+    await loadEvent();
+    closePricingModal();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la mise à jour', 'error');
+  }
+}
+
+async function deletePricing(pricingId: string, label: string) {
+  const confirmed = await showConfirm(`Voulez-vous vraiment supprimer le tarif "${label}" ?`);
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/pricing/${pricingId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erreur lors de la suppression');
+    }
+
+    showToast('Tarif supprimé avec succès', 'success');
+    await loadEvent();
+  } catch (error: any) {
+    console.error('Erreur:', error);
+    showToast(error.message || 'Erreur lors de la suppression', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Rendering Functions
+// ═══════════════════════════════════════════════════════════
+
+function renderEvent() {
+  if (!event) return;
+
+  // Update header
+  const nameEl = document.getElementById('event-name');
+  const subtitleEl = document.getElementById('event-subtitle');
+
+  if (nameEl) nameEl.textContent = event.name;
+  if (subtitleEl) {
+    subtitleEl.textContent = `${event.slug} • ${formatDate(event.date)} • ${getStatusLabel(event.status)}`;
+  }
+
+  // Render display or edit mode
+  if (isEditingEvent) {
+    renderEventEditForm();
+  } else {
+    renderEventDisplay();
+  }
+}
+
+function renderEventDisplay() {
+  const displayEl = document.getElementById('event-display');
+  const formEl = document.getElementById('event-edit-form');
+
+  if (!displayEl || !formEl || !event) return;
+
+  displayEl.classList.remove('hidden');
+  formEl.classList.add('hidden');
+
+  displayEl.innerHTML = `
+    <div>
+      <p class="form-label">Nom</p>
+      <p class="text-[var(--color-anjou-brown)]">${escapeHtml(event.name)}</p>
+    </div>
+
+    <div>
+      <p class="form-label">Slug</p>
+      <p class="text-[var(--color-anjou-brown)]">${event.slug}</p>
+    </div>
+
+    <div>
+      <p class="form-label">Date</p>
+      <p class="text-[var(--color-anjou-brown)]">${formatDate(event.date)}</p>
+    </div>
+
+    <div>
+      <p class="form-label">Statut</p>
+      <p>${getStatusBadge(event.status)}</p>
+    </div>
+
+    <div>
+      <p class="form-label">Paiements</p>
+      <p class="text-[var(--color-anjou-brown)]">${event.paymentEnabled ? '✅ Activés' : '❌ Désactivés'}</p>
+    </div>
+
+    <div>
+      <p class="form-label">Date limite d'inscription</p>
+      <p class="text-[var(--color-anjou-brown)]">${event.registrationDeadline ? formatDate(event.registrationDeadline) : 'Non définie'}</p>
+    </div>
+
+    <div>
+      <p class="form-label">Override inscription</p>
+      <p class="text-[var(--color-anjou-brown)]">
+        ${event.registrationOpenOverride === null ? 'Auto' : event.registrationOpenOverride ? 'Forcer ouvert' : 'Forcer fermé'}
+      </p>
+    </div>
+
+    <div>
+      <p class="form-label">Lieu</p>
+      <p class="text-[var(--color-anjou-brown)]">${event.location || 'Non défini'}</p>
+    </div>
+
+    <div class="md:col-span-2">
+      <p class="form-label">Description</p>
+      <p class="text-[var(--color-anjou-brown)]">${event.description || 'Aucune description'}</p>
+    </div>
+  `;
+}
+
+function renderEventEditForm() {
+  const displayEl = document.getElementById('event-display');
+  const formEl = document.getElementById('event-edit-form');
+
+  if (!displayEl || !formEl || !event) return;
+
+  displayEl.classList.add('hidden');
+  formEl.classList.remove('hidden');
+
+  formEl.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="form-label">Nom</label>
+        <input type="text" id="edit-name" class="form-input" value="${escapeHtml(event.name)}" required />
+      </div>
+
+      <div>
+        <label class="form-label">Slug</label>
+        <input type="text" id="edit-slug" class="form-input" value="${event.slug}" required />
+      </div>
+
+      <div>
+        <label class="form-label">Date</label>
+        <input type="date" id="edit-date" class="form-input" value="${event.date.split('T')[0]}" required />
+      </div>
+
+      <div>
+        <label class="form-label">Statut</label>
+        <select id="edit-status" class="form-input">
+          <option value="DRAFT" ${event.status === 'DRAFT' ? 'selected' : ''}>Brouillon</option>
+          <option value="OPEN" ${event.status === 'OPEN' ? 'selected' : ''}>Ouvert</option>
+          <option value="CLOSED" ${event.status === 'CLOSED' ? 'selected' : ''}>Fermé</option>
+          <option value="ARCHIVED" ${event.status === 'ARCHIVED' ? 'selected' : ''}>Archivé</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Paiements activés</label>
+        <select id="edit-payment-enabled" class="form-input">
+          <option value="true" ${event.paymentEnabled ? 'selected' : ''}>Oui</option>
+          <option value="false" ${!event.paymentEnabled ? 'selected' : ''}>Non</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Date limite d'inscription</label>
+        <input type="date" id="edit-deadline" class="form-input" value="${event.registrationDeadline ? event.registrationDeadline.split('T')[0] : ''}" />
+      </div>
+
+      <div>
+        <label class="form-label">Override inscription</label>
+        <select id="edit-override" class="form-input">
+          <option value="null" ${event.registrationOpenOverride === null ? 'selected' : ''}>Auto</option>
+          <option value="true" ${event.registrationOpenOverride === true ? 'selected' : ''}>Forcer ouvert</option>
+          <option value="false" ${event.registrationOpenOverride === false ? 'selected' : ''}>Forcer fermé</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Lieu</label>
+        <input type="text" id="edit-location" class="form-input" value="${event.location || ''}" />
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="form-label">Description</label>
+        <textarea id="edit-description" class="form-input" rows="4">${event.description || ''}</textarea>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-4 mt-6">
+      <button type="button" id="cancel-edit-btn" class="btn-secondary">Annuler</button>
+      <button type="submit" class="btn-primary">Enregistrer</button>
+    </div>
+  `;
+
+  // Add event listeners
+  formEl.addEventListener('submit', handleEventFormSubmit);
+  document.getElementById('cancel-edit-btn')?.addEventListener('click', () => {
+    isEditingEvent = false;
+    renderEvent();
+  });
+}
+
+function renderActivities() {
+  if (!event) return;
+
+  const container = document.getElementById('activities-container');
+  const emptyEl = document.getElementById('activities-empty');
+
+  if (!container || !emptyEl) return;
+
+  if (event.activities.length === 0) {
+    container.classList.add('hidden');
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  emptyEl.classList.add('hidden');
+
+  container.innerHTML = event.activities
+    .map(
+      (activity) => `
+    <div class="activity-card">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-[var(--color-anjou-brown)] mb-1">${escapeHtml(activity.name)}</h3>
+          ${activity.description ? `<p class="text-sm text-[var(--color-anjou-olive)] mb-2">${escapeHtml(activity.description)}</p>` : ''}
+          <div class="flex items-center gap-4 text-sm">
+            <span class="text-[var(--color-anjou-olive)]">
+              Max: ${activity.maxParticipants || 'Illimité'}
+            </span>
+            ${
+              activity.stats
+                ? `<span class="text-[var(--color-anjou-olive)]">
+              Inscrits: ${activity.stats.totalParticipants}
+            </span>`
+                : ''
+            }
+            ${
+              activity.stats && activity.stats.placesRestantes !== null
+                ? `<span class="text-[var(--color-anjou-olive)]">
+              Restantes: ${activity.stats.placesRestantes}
+            </span>`
+                : ''
+            }
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            data-action="edit-activity"
+            data-activity-id="${activity.id}"
+            class="px-3 py-1.5 text-sm bg-[var(--color-anjou-beige)]/50 hover:bg-[var(--color-anjou-beige)] text-[var(--color-anjou-brown)] rounded-lg transition cursor-pointer"
+            title="Modifier"
+          >
+            ✏️
+          </button>
+          <button
+            data-action="delete-activity"
+            data-activity-id="${activity.id}"
+            data-activity-name="${escapeHtml(activity.name)}"
+            class="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition cursor-pointer"
+            title="Supprimer"
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="border-t border-[var(--color-anjou-beige)] pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-semibold text-[var(--color-anjou-brown)]">Tarifs</h4>
+          <button
+            data-action="add-pricing"
+            data-activity-id="${activity.id}"
+            class="text-xs px-3 py-1 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white rounded-lg hover:shadow-lg transition cursor-pointer"
+          >
+            ➕ Ajouter tarif
+          </button>
+        </div>
+
+        ${
+          activity.pricing.length === 0
+            ? '<p class="text-sm text-[var(--color-anjou-olive)]">Aucun tarif défini</p>'
+            : `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${activity.pricing
+              .map(
+                (price) => `
+              <div class="flex items-center justify-between bg-[var(--color-anjou-beige)]/30 rounded-lg p-3">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-[var(--color-anjou-brown)]">${escapeHtml(price.label)}</p>
+                  <p class="text-xs text-[var(--color-anjou-olive)]">${price.priceType}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <p class="text-lg font-bold text-[var(--color-anjou-brown)]">${formatPrice(price.price)}€</p>
+                  <button
+                    data-action="delete-pricing"
+                    data-pricing-id="${price.id}"
+                    data-pricing-label="${escapeHtml(price.label)}"
+                    class="text-red-500 hover:text-red-700 transition cursor-pointer"
+                    title="Supprimer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        `
+        }
+      </div>
+    </div>
+  `
+    )
+    .join('');
+
+  // Attach event listeners to dynamically created buttons
+  attachActivityEventListeners();
+}
+
+function renderStats() {
+  if (!event) return;
+
+  const container = document.getElementById('stats-container');
+  if (!container) return;
+
+  // Calculate global stats
+  let totalParticipants = 0;
+  let totalRevenue = 0;
+  let totalReservations = event.reservations.length;
+
+  event.reservations.forEach((reservation) => {
+    const participants = reservation.participants as Record<string, number>;
+    const count = Object.values(participants).reduce((sum, qty) => sum + qty, 0);
+    totalParticipants += count;
+
+    if (reservation.paymentStatus === 'PAID') {
+      totalRevenue += Number(reservation.amount);
+    }
+  });
+
+  container.innerHTML = `
+    <div class="stat-card">
+      <p class="stat-value">${totalReservations}</p>
+      <p class="stat-label">Réservations</p>
+    </div>
+
+    <div class="stat-card">
+      <p class="stat-value">${totalParticipants}</p>
+      <p class="stat-label">Participants inscrits</p>
+    </div>
+
+    <div class="stat-card">
+      <p class="stat-value">${formatPrice(totalRevenue.toString())}€</p>
+      <p class="stat-label">Revenus payés</p>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Modal Functions
+// ═══════════════════════════════════════════════════════════
+
+function openActivityModal(activityId?: string) {
+  const modal = document.getElementById('activity-modal');
+  const title = document.getElementById('activity-modal-title');
+  const form = document.getElementById('activity-form') as HTMLFormElement;
+
+  if (!modal || !title || !form) return;
+
+  currentActivityId = activityId || null;
+
+  if (activityId) {
+    // Edit mode
+    const activity = event?.activities.find((a) => a.id === activityId);
+    if (!activity) return;
+
+    title.textContent = 'Modifier l\'activité';
+    (document.getElementById('activity-id') as HTMLInputElement).value = activityId;
+    (document.getElementById('activity-name') as HTMLInputElement).value = activity.name;
+    (document.getElementById('activity-description') as HTMLTextAreaElement).value = activity.description || '';
+    (document.getElementById('activity-max-participants') as HTMLInputElement).value = activity.maxParticipants?.toString() || '';
+  } else {
+    // Create mode
+    title.textContent = 'Nouvelle activité';
+    form.reset();
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeActivityModal() {
+  const modal = document.getElementById('activity-modal');
+  const form = document.getElementById('activity-form') as HTMLFormElement;
+
+  if (!modal || !form) return;
+
+  modal.classList.add('hidden');
+  form.reset();
+  currentActivityId = null;
+}
+
+function openPricingModal(activityId: string, pricingId?: string) {
+  const modal = document.getElementById('pricing-modal');
+  const title = document.getElementById('pricing-modal-title');
+  const form = document.getElementById('pricing-form') as HTMLFormElement;
+
+  if (!modal || !title || !form) return;
+
+  currentPricingId = pricingId || null;
+  (document.getElementById('pricing-activity-id') as HTMLInputElement).value = activityId;
+
+  if (pricingId) {
+    // Edit mode (not implemented in this version)
+    title.textContent = 'Modifier le tarif';
+  } else {
+    // Create mode
+    title.textContent = 'Nouveau tarif';
+    form.reset();
+    (document.getElementById('pricing-activity-id') as HTMLInputElement).value = activityId;
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closePricingModal() {
+  const modal = document.getElementById('pricing-modal');
+  const form = document.getElementById('pricing-form') as HTMLFormElement;
+
+  if (!modal || !form) return;
+
+  modal.classList.add('hidden');
+  form.reset();
+  currentPricingId = null;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Event Handlers
+// ═══════════════════════════════════════════════════════════
+
+async function handleEventFormSubmit(e: Event) {
+  e.preventDefault();
+
+  const name = (document.getElementById('edit-name') as HTMLInputElement).value;
+  const slug = (document.getElementById('edit-slug') as HTMLInputElement).value;
+  const date = (document.getElementById('edit-date') as HTMLInputElement).value;
+  const status = (document.getElementById('edit-status') as HTMLSelectElement).value;
+  const paymentEnabled = (document.getElementById('edit-payment-enabled') as HTMLSelectElement).value === 'true';
+  const deadline = (document.getElementById('edit-deadline') as HTMLInputElement).value;
+  const override = (document.getElementById('edit-override') as HTMLSelectElement).value;
+  const location = (document.getElementById('edit-location') as HTMLInputElement).value;
+  const description = (document.getElementById('edit-description') as HTMLTextAreaElement).value;
+
+  await updateEvent({
+    name,
+    slug,
+    date: new Date(date).toISOString(),
+    status: status as any,
+    paymentEnabled,
+    registrationDeadline: deadline ? new Date(deadline).toISOString() : null,
+    registrationOpenOverride: override === 'null' ? null : override === 'true',
+    location: location || null,
+    description: description || null,
+  });
+}
+
+async function handleActivityFormSubmit(e: Event) {
+  e.preventDefault();
+
+  const name = (document.getElementById('activity-name') as HTMLInputElement).value;
+  const description = (document.getElementById('activity-description') as HTMLTextAreaElement).value;
+  const maxParticipants = (document.getElementById('activity-max-participants') as HTMLInputElement).value;
+
+  const data = {
+    name,
+    description: description || undefined,
+    maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
+  };
+
+  if (currentActivityId) {
+    await updateActivity(currentActivityId, data);
+  } else {
+    await createActivity(data);
+  }
+}
+
+async function handlePricingFormSubmit(e: Event) {
+  e.preventDefault();
+
+  const activityId = (document.getElementById('pricing-activity-id') as HTMLInputElement).value;
+  const priceType = (document.getElementById('pricing-type') as HTMLInputElement).value;
+  const label = (document.getElementById('pricing-label') as HTMLInputElement).value;
+  const price = parseFloat((document.getElementById('pricing-price') as HTMLInputElement).value);
+
+  const data = { priceType, label, price };
+
+  if (currentPricingId) {
+    await updatePricing(currentPricingId, data);
+  } else {
+    await createPricing(activityId, data);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Dynamic Event Listeners (for activity buttons)
+// ═══════════════════════════════════════════════════════════
+
+function attachActivityEventListeners() {
+  // Edit activity buttons
+  document.querySelectorAll('[data-action="edit-activity"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const activityId = (btn as HTMLElement).dataset.activityId;
+      if (activityId) openActivityModal(activityId);
+    });
+  });
+
+  // Delete activity buttons
+  document.querySelectorAll('[data-action="delete-activity"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const activityId = (btn as HTMLElement).dataset.activityId;
+      const activityName = (btn as HTMLElement).dataset.activityName;
+      if (activityId && activityName) deleteActivity(activityId, activityName);
+    });
+  });
+
+  // Add pricing buttons
+  document.querySelectorAll('[data-action="add-pricing"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const activityId = (btn as HTMLElement).dataset.activityId;
+      if (activityId) openPricingModal(activityId);
+    });
+  });
+
+  // Delete pricing buttons
+  document.querySelectorAll('[data-action="delete-pricing"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const pricingId = (btn as HTMLElement).dataset.pricingId;
+      const pricingLabel = (btn as HTMLElement).dataset.pricingLabel;
+      if (pricingId && pricingLabel) deletePricing(pricingId, pricingLabel);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI Event Listeners
+// ═══════════════════════════════════════════════════════════
+
+function initEventListeners() {
+  // Logout
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    });
+  }
+
+  // Edit event
+  const editEventBtn = document.getElementById('edit-event-btn');
+  if (editEventBtn) {
+    editEventBtn.addEventListener('click', () => {
+      isEditingEvent = true;
+      renderEvent();
+    });
+  }
+
+  // Add activity
+  const addActivityBtn = document.getElementById('add-activity-btn');
+  if (addActivityBtn) {
+    addActivityBtn.addEventListener('click', () => {
+      openActivityModal();
+    });
+  }
+
+  // Activity modal listeners
+  const activityModalClose = document.getElementById('activity-modal-close');
+  const activityCancelBtn = document.getElementById('activity-cancel-btn');
+  const activityForm = document.getElementById('activity-form');
+  const activityOverlay = document.querySelector('#activity-modal .modal-overlay');
+
+  if (activityModalClose) {
+    activityModalClose.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeActivityModal();
+    });
+  }
+
+  if (activityCancelBtn) {
+    activityCancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeActivityModal();
+    });
+  }
+
+  if (activityForm) {
+    activityForm.addEventListener('submit', handleActivityFormSubmit);
+  }
+
+  if (activityOverlay) {
+    activityOverlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeActivityModal();
+    });
+  }
+
+  // Pricing modal listeners
+  const pricingModalClose = document.getElementById('pricing-modal-close');
+  const pricingCancelBtn = document.getElementById('pricing-cancel-btn');
+  const pricingForm = document.getElementById('pricing-form');
+  const pricingOverlay = document.querySelector('#pricing-modal .modal-overlay');
+
+  if (pricingModalClose) {
+    pricingModalClose.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closePricingModal();
+    });
+  }
+
+  if (pricingCancelBtn) {
+    pricingCancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closePricingModal();
+    });
+  }
+
+  if (pricingForm) {
+    pricingForm.addEventListener('submit', handlePricingFormSubmit);
+  }
+
+  if (pricingOverlay) {
+    pricingOverlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closePricingModal();
+    });
+  }
+
+  // Confirm modal listeners
+  const confirmModalClose = document.getElementById('confirm-modal-close');
+  const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+  const confirmOkBtn = document.getElementById('confirm-ok-btn');
+  const confirmOverlay = document.querySelector('#confirm-modal .modal-overlay');
+
+  if (confirmModalClose) {
+    confirmModalClose.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeConfirm(false);
+    });
+  }
+
+  if (confirmCancelBtn) {
+    confirmCancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeConfirm(false);
+    });
+  }
+
+  if (confirmOkBtn) {
+    confirmOkBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeConfirm(true);
+    });
+  }
+
+  if (confirmOverlay) {
+    confirmOverlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeConfirm(false);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Toast & Confirm System
+// ═══════════════════════════════════════════════════════════
+
+function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+
+  const icons = {
+    success: '<svg class="toast-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
+    error: '<svg class="toast-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>',
+    info: '<svg class="toast-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>',
+  };
+
+  toast.innerHTML = `
+    ${icons[type]}
+    <span class="toast-message">${escapeHtml(message)}</span>
+    <button class="toast-close">✕</button>
+  `;
+
+  const closeBtn = toast.querySelector('.toast-close');
+  closeBtn?.addEventListener('click', () => {
+    toast.classList.add('slide-out');
+    setTimeout(() => toast.remove(), 300);
+  });
+
+  container.appendChild(toast);
+
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.classList.add('slide-out');
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 5000);
+}
+
+let confirmResolve: ((value: boolean) => void) | null = null;
+
+function showConfirm(message: string, details?: string[]): Promise<boolean> {
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+
+    const modal = document.getElementById('confirm-modal');
+    const messageEl = document.getElementById('confirm-message');
+    const detailsEl = document.getElementById('confirm-details');
+    const detailsList = document.getElementById('confirm-details-list');
+
+    if (!modal || !messageEl) return resolve(false);
+
+    messageEl.textContent = message;
+
+    if (details && details.length > 0 && detailsEl && detailsList) {
+      detailsList.innerHTML = details.map((d) => `<li>${escapeHtml(d)}</li>`).join('');
+      detailsEl.classList.remove('hidden');
+    } else if (detailsEl) {
+      detailsEl.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+  });
+}
+
+function closeConfirm(result: boolean) {
+  const modal = document.getElementById('confirm-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+
+  if (confirmResolve) {
+    confirmResolve(result);
+    confirmResolve = null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Utility Functions
+// ═══════════════════════════════════════════════════════════
+
+function getStatusBadge(status: string): string {
+  const badges: Record<string, { label: string; class: string }> = {
+    DRAFT: { label: 'Brouillon', class: 'badge-draft' },
+    OPEN: { label: 'Ouvert', class: 'badge-open' },
+    CLOSED: { label: 'Fermé', class: 'badge-closed' },
+    ARCHIVED: { label: 'Archivé', class: 'badge-archived' },
+  };
+
+  const badge = badges[status] || { label: status, class: 'badge-draft' };
+  return `<span class="badge ${badge.class}">${badge.label}</span>`;
+}
+
+function getStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    DRAFT: 'Brouillon',
+    OPEN: 'Ouvert',
+    CLOSED: 'Fermé',
+    ARCHIVED: 'Archivé',
+  };
+  return labels[status] || status;
+}
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function formatPrice(price: string): string {
+  return parseFloat(price).toFixed(2);
+}
+
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Initialization
+// ═══════════════════════════════════════════════════════════
+
+async function init() {
+  // Get event ID from URL
+  const pathParts = window.location.pathname.split('/');
+  eventId = pathParts[pathParts.length - 1];
+
+  if (!eventId || eventId === 'new') {
+    // Wait for DOM to be ready for toast
+    setTimeout(() => {
+      showToast('Page de création d\'événement non encore implémentée', 'info');
+      setTimeout(() => {
+        window.location.href = '/admin/events';
+      }, 2000);
+    }, 100);
+    return;
+  }
+
+  const isAuth = await checkAuth();
+  if (!isAuth) return;
+
+  initEventListeners();
+  await loadEvent();
+}
+
+// Start
+init();
