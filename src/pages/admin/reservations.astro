@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import '../../styles/admin/contacts.css';
+import ReservationsPage from '../../components/admin/islands/ReservationsPage';
 ---
 
 <Layout title="Gestion des Réservations" description="Liste des réservations événements">
@@ -21,32 +21,19 @@ import '../../styles/admin/contacts.css';
             <h1 class="text-2xl md:text-3xl font-serif">Réservations Événements</h1>
           </div>
           <p class="text-white/90 text-sm">
-            <span id="reservation-count">...</span> réservations •
-            <span id="total-amount">...</span> de revenus
+            Gestion complète des inscriptions et paiements
           </p>
         </div>
 
-        <div class="flex items-center space-x-3">
-          <button
-            id="export-csv-btn"
-            class="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <span>Export CSV</span>
-          </button>
-
-          <button
-            id="logout-btn"
-            class="flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            <span>Déconnexion</span>
-          </button>
-        </div>
+        <button
+          id="logout-btn"
+          class="flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span>Déconnexion</span>
+        </button>
       </div>
     </div>
   </section>
@@ -54,142 +41,214 @@ import '../../styles/admin/contacts.css';
   <!-- Main Content -->
   <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
     <div class="container mx-auto px-4 max-w-7xl">
-
-      <!-- Filtres -->
-      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-
-        <div class="p-6">
-          <h2 class="text-xl font-serif text-[var(--color-anjou-brown)] mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-            </svg>
-            Filtres
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- Filtre Statut Paiement -->
-            <div>
-              <label for="filter-payment-status" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
-                Statut Paiement
-              </label>
-              <select id="filter-payment-status" class="filter-select">
-                <option value="">Tous les statuts</option>
-                <option value="PENDING">En attente</option>
-                <option value="PAID">Payé</option>
-                <option value="FAILED">Échoué</option>
-                <option value="REFUNDED">Remboursé</option>
-                <option value="CANCELLED">Annulé</option>
-              </select>
-            </div>
-
-            <!-- Filtre Événement (sera rempli dynamiquement) -->
-            <div>
-              <label for="filter-event" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
-                Événement
-              </label>
-              <select id="filter-event" class="filter-select">
-                <option value="">Tous les événements</option>
-              </select>
-            </div>
-
-            <!-- Filtre Archivé -->
-            <div>
-              <label for="filter-archived" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
-                Archivage
-              </label>
-              <select id="filter-archived" class="filter-select">
-                <option value="false">Actives</option>
-                <option value="true">Archivées</option>
-                <option value="">Toutes</option>
-              </select>
-            </div>
-
-            <!-- Bouton Rafraîchir -->
-            <div class="flex items-end">
-              <button id="refresh-btn" class="refresh-button">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Rafraîchir
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tableau des réservations -->
-      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
-        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-
-        <!-- Loading state -->
-        <div id="loading-state" class="p-8 text-center">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[var(--color-anjou-gold)] border-t-transparent"></div>
-          <p class="text-[var(--color-anjou-olive)] mt-4">Chargement des réservations...</p>
-        </div>
-
-        <!-- Empty state -->
-        <div id="empty-state" class="hidden p-8 text-center">
-          <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-          </svg>
-          <p class="text-gray-500 text-lg">Aucune réservation</p>
-        </div>
-
-        <!-- Table -->
-        <div id="table-container" class="hidden overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-[var(--color-anjou-beige)]/30">
-              <tr>
-                <th class="table-header">Date</th>
-                <th class="table-header">Événement</th>
-                <th class="table-header">Nom</th>
-                <th class="table-header">Email</th>
-                <th class="table-header">Activité</th>
-                <th class="table-header">Participants</th>
-                <th class="table-header">Montant</th>
-                <th class="table-header">Statut</th>
-                <th class="table-header">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="reservations-tbody">
-              <!-- Rows will be inserted by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
+      {/* Astro Island with Preact */}
+      <ReservationsPage client:load />
     </div>
   </section>
-
 </Layout>
 
+<style is:global>
+  /* Form Styles */
+  .form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-anjou-olive);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 2px solid var(--color-anjou-beige);
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-anjou-brown);
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: var(--color-anjou-gold);
+    box-shadow: 0 0 0 4px rgba(196, 165, 113, 0.15);
+    background: var(--color-anjou-beige)/10;
+  }
+
+  /* Button cursor */
+  button {
+    cursor: pointer;
+  }
+
+  /* Toast Styles (same as events page) */
+  .toast {
+    min-width: 320px;
+    max-width: 480px;
+    padding: 1rem 1.25rem;
+    border-radius: 0.875rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideIn 0.3s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .toast-success {
+    background: white;
+    border: 2px solid #10b981;
+    border-left-width: 6px;
+    color: #065f46;
+  }
+
+  .toast-success .toast-icon {
+    color: #10b981;
+  }
+
+  .toast-error {
+    background: white;
+    border: 2px solid #ef4444;
+    border-left-width: 6px;
+    color: #991b1b;
+  }
+
+  .toast-error .toast-icon {
+    color: #ef4444;
+  }
+
+  .toast-info {
+    background: white;
+    border: 2px solid #3b82f6;
+    border-left-width: 6px;
+    color: #1e40af;
+  }
+
+  .toast-info .toast-icon {
+    color: #3b82f6;
+  }
+
+  .toast-icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .toast-message {
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .toast-close {
+    flex-shrink: 0;
+    padding: 0.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .toast-close:hover {
+    opacity: 1;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  .toast.slide-out {
+    animation: slideOut 0.3s ease forwards;
+  }
+
+  /* Modal Styles (same as events page) */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .modal.hidden {
+    display: none !important;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    position: relative;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 32rem;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-anjou-beige);
+  }
+
+  .modal-close {
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer !important;
+    font-size: 1.5rem;
+    color: var(--color-anjou-olive);
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover {
+    color: var(--color-anjou-brown);
+    transform: scale(1.1);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+</style>
+
 <script>
-  import {
-    loadReservations,
-    updatePaymentStatus,
-    archiveReservation,
-    deleteReservation,
-    exportToCSV
-  } from '../../scripts/admin/reservations.ts';
-
-  // Event listeners
-  document.getElementById('logout-btn')?.addEventListener('click', async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/admin/login';
-  });
-
-  document.getElementById('filter-payment-status')?.addEventListener('change', loadReservations);
-  document.getElementById('filter-event')?.addEventListener('change', loadReservations);
-  document.getElementById('filter-archived')?.addEventListener('change', loadReservations);
-  document.getElementById('refresh-btn')?.addEventListener('click', loadReservations);
-  document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
-
-  // Exposer les fonctions globalement pour les onclick
-  (window as any).updatePaymentStatus = updatePaymentStatus;
-  (window as any).deleteReservation = deleteReservation;
-  (window as any).archiveReservation = archiveReservation;
-
-  // Charger les réservations au chargement
-  loadReservations();
+  // Simple logout handler
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    });
+  }
 </script>

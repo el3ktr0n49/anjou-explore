@@ -50,3 +50,47 @@ export interface ActivityStats {
 }
 
 export type ToastType = 'success' | 'error' | 'info';
+
+// ========================================
+// Reservations Page Types
+// ========================================
+
+export interface PaymentTransaction {
+  id: string;
+  checkoutId: string;
+  transactionId?: string;
+  amount: number;
+  status: 'INITIATED' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'EXPIRED' | 'CANCELLED';
+  createdAt: string;
+}
+
+export interface ReservationEvent {
+  id: string;
+  name: string;
+  slug: string;
+  date: string;
+}
+
+export interface ReservationFull {
+  id: string;
+  eventId: string;
+  event: ReservationEvent;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  activityName: string;
+  participants: Record<string, number>;
+  amount: number;
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
+  sumupCheckoutId?: string;
+  sumupTransactionId?: string;
+  paidAt?: string;
+  notes?: string;
+  archived: boolean;
+  archivedAt?: string;
+  archivedBy?: string;
+  paymentTransactions: PaymentTransaction[];
+  createdAt: string;
+  updatedAt: string;
+}
