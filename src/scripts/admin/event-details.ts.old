@@ -310,58 +310,64 @@ function renderEvent() {
 function renderEventDisplay() {
   const displayEl = document.getElementById('event-display');
   const formEl = document.getElementById('event-edit-form');
+  const editBtn = document.getElementById('edit-event-btn');
 
   if (!displayEl || !formEl || !event) return;
 
   displayEl.classList.remove('hidden');
   formEl.classList.add('hidden');
 
+  // Show edit button
+  if (editBtn) {
+    editBtn.classList.remove('hidden');
+  }
+
   displayEl.innerHTML = `
     <div>
       <p class="form-label">Nom</p>
-      <p class="text-[var(--color-anjou-brown)]">${escapeHtml(event.name)}</p>
+      <p class="field-value">${escapeHtml(event.name)}</p>
     </div>
 
     <div>
       <p class="form-label">Slug</p>
-      <p class="text-[var(--color-anjou-brown)]">${event.slug}</p>
+      <p class="field-value">${event.slug}</p>
     </div>
 
     <div>
       <p class="form-label">Date</p>
-      <p class="text-[var(--color-anjou-brown)]">${formatDate(event.date)}</p>
+      <p class="field-value">${formatDate(event.date)}</p>
     </div>
 
     <div>
       <p class="form-label">Statut</p>
-      <p>${getStatusBadge(event.status)}</p>
+      <p class="field-value">${getStatusBadge(event.status)}</p>
     </div>
 
     <div>
       <p class="form-label">Paiements</p>
-      <p class="text-[var(--color-anjou-brown)]">${event.paymentEnabled ? '✅ Activés' : '❌ Désactivés'}</p>
+      <p class="field-value">${event.paymentEnabled ? '✅ Activés' : '❌ Désactivés'}</p>
     </div>
 
     <div>
       <p class="form-label">Date limite d'inscription</p>
-      <p class="text-[var(--color-anjou-brown)]">${event.registrationDeadline ? formatDate(event.registrationDeadline) : 'Non définie'}</p>
+      <p class="field-value">${event.registrationDeadline ? formatDate(event.registrationDeadline) : 'Non définie'}</p>
     </div>
 
     <div>
       <p class="form-label">Override inscription</p>
-      <p class="text-[var(--color-anjou-brown)]">
+      <p class="field-value">
         ${event.registrationOpenOverride === null ? 'Auto' : event.registrationOpenOverride ? 'Forcer ouvert' : 'Forcer fermé'}
       </p>
     </div>
 
     <div>
       <p class="form-label">Lieu</p>
-      <p class="text-[var(--color-anjou-brown)]">${event.location || 'Non défini'}</p>
+      <p class="field-value">${event.location || 'Non défini'}</p>
     </div>
 
     <div class="md:col-span-2">
       <p class="form-label">Description</p>
-      <p class="text-[var(--color-anjou-brown)]">${event.description || 'Aucune description'}</p>
+      <p class="field-value">${event.description || 'Aucune description'}</p>
     </div>
   `;
 }
@@ -369,13 +375,27 @@ function renderEventDisplay() {
 function renderEventEditForm() {
   const displayEl = document.getElementById('event-display');
   const formEl = document.getElementById('event-edit-form');
+  const editBtn = document.getElementById('edit-event-btn');
 
   if (!displayEl || !formEl || !event) return;
 
   displayEl.classList.add('hidden');
   formEl.classList.remove('hidden');
 
+  // Hide edit button when in edit mode
+  if (editBtn) {
+    editBtn.classList.add('hidden');
+  }
+
   formEl.innerHTML = `
+    <!-- Edit Mode Indicator -->
+    <div class="edit-mode-indicator">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+      </svg>
+      <p>Mode édition - Modifiez les champs puis cliquez sur "Enregistrer"</p>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label class="form-label">Nom</label>
@@ -435,9 +455,13 @@ function renderEventEditForm() {
       </div>
     </div>
 
-    <div class="flex justify-end gap-4 mt-6">
-      <button type="button" id="cancel-edit-btn" class="btn-secondary">Annuler</button>
-      <button type="submit" class="btn-primary">Enregistrer</button>
+    <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-[var(--color-anjou-beige)]">
+      <button type="button" id="cancel-edit-btn" class="btn-secondary px-6 py-2.5">
+        ✕ Annuler
+      </button>
+      <button type="submit" class="btn-primary px-6 py-2.5">
+        ✓ Enregistrer
+      </button>
     </div>
   `;
 

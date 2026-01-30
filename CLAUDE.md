@@ -27,6 +27,58 @@ Ce projet est une migration d'un site Wix vers une stack moderne basée sur Astr
 - Support natif des API endpoints pour backend (REST API)
 - Facilité d'évolution vers une architecture avec API/BDD (✅ fait)
 
+### Astro Islands + Preact (✅ Refactorisation 30 jan 2026)
+
+**Philosophie** : Utiliser Preact pour les composants interactifs complexes au lieu de TypeScript vanilla avec manipulation DOM.
+
+**Avantages** :
+- ✅ Séparation claire HTML/JS/CSS (vs `innerHTML` avec strings)
+- ✅ Type-safety complète avec JSX/TSX
+- ✅ Composants réutilisables et testables
+- ✅ Réactivité automatique avec hooks (`useState`, `useEffect`)
+- ✅ Bundle ultra-léger : Preact = 3kb vs React = 45kb
+- ✅ API compatible React (migration facile si besoin)
+
+**Pattern Astro Islands** :
+```astro
+---
+// Page .astro (SSR)
+import MyComponent from '../components/islands/MyComponent';
+---
+
+<Layout>
+  {/* Island : Devient interactif côté client */}
+  <MyComponent client:load initialData={data} />
+</Layout>
+```
+
+**Directives client** :
+- `client:load` : Hydrate immédiatement (pour interfaces admin)
+- `client:idle` : Hydrate quand navigateur idle
+- `client:visible` : Hydrate quand visible (lazy loading)
+
+**Structure composants** :
+```
+src/components/admin/
+├── types.ts                    # Types partagés
+├── ui/                         # Composants réutilisables
+│   ├── Toast.tsx
+│   ├── Modal.tsx
+│   └── ConfirmDialog.tsx
+└── islands/                    # Astro Islands (interactifs)
+    ├── EventDetailsPage.tsx    # Orchestrateur principal
+    ├── EventInfoCard.tsx
+    └── ActivitiesManager.tsx
+```
+
+**Pages refactorées** :
+- ✅ `/admin/events/[id]` : Gestion événement (EventDetailsPage)
+- 🔜 `/admin/events` : Liste événements (EventsTable)
+- 🔜 `/admin/contacts` : Gestion contacts (ContactsManager)
+- 🔜 `/admin/reservations` : Gestion réservations (ReservationsManager)
+
+**Documentation complète** : Voir [REFACTOR_PREACT.md](REFACTOR_PREACT.md)
+
 ## Commands
 
 ### Development

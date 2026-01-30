@@ -1,5 +1,54 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import EventDetailsPage from '../../../components/admin/islands/EventDetailsPage';
+
+// Get event ID from URL
+const { id } = Astro.params;
+
+if (!id || id === 'new') {
+  return Astro.redirect('/admin/events');
+}
+
+// Fetch event for SSR (to populate header)
+let eventName = 'Chargement...';
+let eventSubtitle = '...';
+
+try {
+  const response = await fetch(`${Astro.url.origin}/api/admin/events/${id}`, {
+    headers: {
+      Cookie: Astro.request.headers.get('Cookie') || '',
+    },
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    const event = data.event;
+
+    const formatDate = (dateStr: string): string => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    };
+
+    const getStatusLabel = (status: string): string => {
+      const labels: Record<string, string> = {
+        DRAFT: 'Brouillon',
+        OPEN: 'Ouvert',
+        CLOSED: 'Fermé',
+        ARCHIVED: 'Archivé',
+      };
+      return labels[status] || status;
+    };
+
+    eventName = event.name;
+    eventSubtitle = `${event.slug} • ${formatDate(event.date)} • ${getStatusLabel(event.status)}`;
+  }
+} catch (error) {
+  console.error('Error fetching event:', error);
+}
 ---
 
 <Layout title="Détails de l'événement" description="Gestion d'un événement">
@@ -17,10 +66,10 @@ import Layout from '../../../layouts/Layout.astro';
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
-            <h1 id="event-name" class="text-2xl md:text-3xl font-serif">Chargement...</h1>
+            <h1 class="text-2xl md:text-3xl font-serif">{eventName}</h1>
           </div>
-          <p id="event-subtitle" class="text-white/90 text-sm">
-            ...
+          <p class="text-white/90 text-sm">
+            {eventSubtitle}
           </p>
         </div>
 
@@ -40,208 +89,10 @@ import Layout from '../../../layouts/Layout.astro';
   <!-- Main Content -->
   <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
     <div class="container mx-auto px-4 max-w-7xl">
-
-      <!-- Loading state -->
-      <div id="loading-state" class="text-center py-16">
-        <div class="inline-flex items-center space-x-2 text-[var(--color-anjou-olive)]">
-          <svg class="animate-spin h-8 w-8" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-lg font-medium">Chargement de l'événement...</span>
-        </div>
-      </div>
-
-      <!-- Main content -->
-      <div id="main-content" class="hidden space-y-8">
-
-        <!-- Informations générales de l'événement -->
-        <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
-          <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-          <div class="p-8">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-2xl font-serif text-[var(--color-anjou-brown)] flex items-center">
-                <svg class="w-6 h-6 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Informations générales
-              </h2>
-              <button
-                id="edit-event-btn"
-                class="px-4 py-2 bg-[var(--color-anjou-gold)] text-white rounded-lg hover:shadow-lg transition font-medium text-sm"
-              >
-                ✏️ Modifier
-              </button>
-            </div>
-
-            <!-- Display Mode -->
-            <div id="event-display" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Content will be filled by JS -->
-            </div>
-
-            <!-- Edit Mode -->
-            <form id="event-edit-form" class="hidden space-y-6">
-              <!-- Form fields will be filled by JS -->
-            </form>
-          </div>
-        </div>
-
-        <!-- Liste des activités -->
-        <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
-          <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-          <div class="p-8">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-2xl font-serif text-[var(--color-anjou-brown)] flex items-center">
-                <svg class="w-6 h-6 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                </svg>
-                Activités & Tarifs
-              </h2>
-              <button
-                id="add-activity-btn"
-                class="px-4 py-2 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white rounded-lg hover:shadow-lg transition font-medium text-sm"
-              >
-                ➕ Nouvelle activité
-              </button>
-            </div>
-
-            <!-- Activities list -->
-            <div id="activities-container" class="space-y-6">
-              <!-- Activities will be rendered here -->
-            </div>
-
-            <!-- Empty state -->
-            <div id="activities-empty" class="hidden text-center py-12">
-              <svg class="mx-auto h-12 w-12 text-[var(--color-anjou-olive)]/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-              </svg>
-              <p class="text-sm text-[var(--color-anjou-olive)]">Aucune activité pour cet événement</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Statistiques -->
-        <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
-          <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-          <div class="p-8">
-            <h2 class="text-2xl font-serif text-[var(--color-anjou-brown)] mb-6 flex items-center">
-              <svg class="w-6 h-6 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              Statistiques
-            </h2>
-
-            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <!-- Stats will be rendered here -->
-            </div>
-          </div>
-        </div>
-
-      </div>
-
+      {/* Astro Island with Preact */}
+      <EventDetailsPage client:load eventId={id} />
     </div>
   </section>
-
-  <!-- Modal: Create/Edit Activity -->
-  <div id="activity-modal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="activity-modal-title" class="text-xl font-serif text-[var(--color-anjou-brown)]">Nouvelle activité</h3>
-        <button id="activity-modal-close" class="modal-close">✕</button>
-      </div>
-      <form id="activity-form" class="modal-body space-y-4">
-        <input type="hidden" id="activity-id" />
-
-        <div>
-          <label for="activity-name" class="form-label">Nom de l'activité</label>
-          <input type="text" id="activity-name" class="form-input" placeholder="Ex: rando papilles" required />
-        </div>
-
-        <div>
-          <label for="activity-description" class="form-label">Description (optionnel)</label>
-          <textarea id="activity-description" class="form-input" rows="3" placeholder="Description de l'activité"></textarea>
-        </div>
-
-        <div>
-          <label for="activity-max-participants" class="form-label">Nombre maximum de participants (optionnel)</label>
-          <input type="number" id="activity-max-participants" class="form-input" min="1" placeholder="Ex: 50" />
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" id="activity-cancel-btn" class="btn-secondary">Annuler</button>
-          <button type="submit" class="btn-primary">Enregistrer</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Add/Edit Pricing -->
-  <div id="pricing-modal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="pricing-modal-title" class="text-xl font-serif text-[var(--color-anjou-brown)]">Nouveau tarif</h3>
-        <button id="pricing-modal-close" class="modal-close">✕</button>
-      </div>
-      <form id="pricing-form" class="modal-body space-y-4">
-        <input type="hidden" id="pricing-id" />
-        <input type="hidden" id="pricing-activity-id" />
-
-        <div>
-          <label for="pricing-type" class="form-label">Type de tarif</label>
-          <input type="text" id="pricing-type" class="form-input" placeholder="Ex: adulte, enfant" required />
-        </div>
-
-        <div>
-          <label for="pricing-label" class="form-label">Libellé</label>
-          <input type="text" id="pricing-label" class="form-input" placeholder="Ex: Adulte (+16 ans)" required />
-        </div>
-
-        <div>
-          <label for="pricing-price" class="form-label">Prix (€)</label>
-          <input type="number" id="pricing-price" class="form-input" step="0.01" min="0" placeholder="Ex: 45.00" required />
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" id="pricing-cancel-btn" class="btn-secondary">Annuler</button>
-          <button type="submit" class="btn-primary">Enregistrer</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Confirmation -->
-  <div id="confirm-modal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content max-w-md">
-      <div class="modal-header border-b-2 border-red-200">
-        <h3 class="text-xl font-serif text-red-700 flex items-center">
-          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
-          Confirmation
-        </h3>
-        <button id="confirm-modal-close" class="modal-close">✕</button>
-      </div>
-      <div class="modal-body">
-        <p id="confirm-message" class="text-[var(--color-anjou-brown)] mb-6"></p>
-        <div id="confirm-details" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
-          <p class="text-sm text-red-700 font-semibold mb-2">Cette action supprimera :</p>
-          <ul id="confirm-details-list" class="text-sm text-red-600 list-disc list-inside space-y-1"></ul>
-        </div>
-        <div class="flex justify-end gap-3">
-          <button id="confirm-cancel-btn" class="btn-secondary">Annuler</button>
-          <button id="confirm-ok-btn" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
-            Confirmer
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3"></div>
 </Layout>
 
 <style is:global>
@@ -598,4 +449,13 @@ import Layout from '../../../layouts/Layout.astro';
   }
 </style>
 
-<script src="../../../scripts/admin/event-details.ts"></script>
+<script>
+  // Simple logout handler
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    });
+  }
+</script>
