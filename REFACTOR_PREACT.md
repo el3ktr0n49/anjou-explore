@@ -1,6 +1,6 @@
 # Refactorisation Astro Islands + Preact
 
-**Date** : 30 janvier 2026
+**Dates** : 30-31 janvier 2026
 **Objectif** : Remplacer le code TypeScript vanilla avec manipulation DOM (`innerHTML`) par des composants Preact réactifs et maintenables.
 
 ---
@@ -27,19 +27,40 @@ bun astro add preact --yes
 
 ```
 src/components/admin/
-├── types.ts                        # Types TypeScript partagés
+├── types.ts                        # Types TypeScript partagés (Event, Activity, ReservationFull, etc.)
 ├── ui/                             # Composants UI réutilisables
 │   ├── Toast.tsx                   # Notification individuelle
 │   ├── ToastContainer.tsx          # Gestionnaire de toasts
 │   ├── Modal.tsx                   # Modal réutilisable
 │   └── ConfirmDialog.tsx           # Dialog de confirmation
 └── islands/                        # Astro Islands (composants interactifs)
-    ├── EventDetailsPage.tsx        # 🎯 Orchestrateur principal
+    ├── EventDetailsPage.tsx        # 🎯 Page détails événement (/admin/events/[id])
     ├── EventInfoCard.tsx           # Affichage/édition événement
     ├── ActivitiesManager.tsx       # CRUD activités + tarifs
     ├── ActivityCard.tsx            # Card d'une activité
-    └── StatsCard.tsx               # Statistiques événement
+    ├── StatsCard.tsx               # Statistiques événement
+    ├── EventsListPage.tsx          # 🎯 Page liste événements (/admin/events)
+    ├── ReservationsPage.tsx        # 🎯 Page gestion réservations (/admin/reservations)
+    ├── ReservationFilters.tsx      # Filtres réservations
+    └── ContactsPage.tsx            # 🎯 Page gestion contacts (/admin/contacts)
+
+src/scripts/admin/                  # Scripts archivés
+├── event-details.ts.old            # 1100 lignes → EventDetailsPage.tsx
+├── events.ts.old                   # 442 lignes → EventsListPage.tsx
+├── reservations.ts.old             # 493 lignes → ReservationsPage.tsx
+└── contacts.ts.old                 # 329 lignes → ContactsPage.tsx
 ```
+
+### 3. Pages admin refactorisées
+
+| Page | Lignes avant | Composant Preact | Statut |
+|------|--------------|------------------|--------|
+| `/admin/events/[id]` | 1100 | EventDetailsPage.tsx | ✅ Complété (30 jan) |
+| `/admin/events` | 442 | EventsListPage.tsx | ✅ Complété (31 jan) |
+| `/admin/reservations` | 493 | ReservationsPage.tsx | ✅ Complété (31 jan) |
+| `/admin/contacts` | 329 | ContactsPage.tsx | ✅ Complété (31 jan) |
+
+**Total refactorisé** : 2364 lignes de TypeScript vanilla → 4 composants Preact réactifs
 
 ---
 
@@ -274,9 +295,79 @@ bun run dev
 
 ---
 
-## 🔄 Migration d'autres pages
+## 📄 Détails des pages refactorisées
 
-Pour migrer d'autres pages admin (ex: `/admin/contacts`, `/admin/reservations`) :
+### EventsListPage (`/admin/events`)
+**Refactorisé le** : 31 janvier 2026
+
+**Fonctionnalités** :
+- Liste tous les événements avec pagination
+- Filtre par statut (DRAFT, OPEN, CLOSED, ARCHIVED)
+- Actions : Voir détails, Supprimer événement
+- Bouton "Nouvel Événement" (redirige vers `/admin/events/new`)
+- Badges de statut colorés
+- Protection suppression si réservations existent
+
+**Composant** : `EventsListPage.tsx` (320 lignes)
+- State : events, loading, statusFilter, totalEvents
+- Toast notifications + ConfirmDialog
+- Animations fadeIn sur les lignes
+
+### ReservationsPage (`/admin/reservations`)
+**Refactorisé le** : 31 janvier 2026
+
+**Fonctionnalités** :
+- Liste toutes les réservations avec filtres multiples
+- Filtre par statut paiement (PENDING, PAID, FAILED, REFUNDED, CANCELLED)
+- Filtre par événement (dropdown dynamique)
+- Filtre par archivage (Actives, Archivées, Toutes)
+- Actions : Marquer comme payé (manuel), Rembourser, Archiver, Restaurer, Supprimer
+- Export CSV complet
+- Protection paiement manuel si transaction SumUp active
+
+**Composants** :
+- `ReservationsPage.tsx` (580 lignes) - Orchestrateur principal
+- `ReservationFilters.tsx` (120 lignes) - Filtres contrôlés
+
+**Particularités** :
+- Gestion intelligente des transactions SumUp
+- Double confirmation pour suppression définitive
+- Bouton "Payé" désactivé si transaction SumUp en cours (avec tooltip)
+- Total montant calculé en temps réel
+
+### ContactsPage (`/admin/contacts`)
+**Refactorisé le** : 31 janvier 2026
+
+**Fonctionnalités** :
+- Liste toutes les demandes de contact et réservations aventure
+- Filtre par statut (NEW, PROCESSED, ARCHIVED)
+- Filtre par type (Contact simple, Demande réservation)
+- Actions : Voir message, Marquer comme traité, Archiver, Supprimer
+- **Système de lignes extensibles** : Clic sur 👁️ affiche message complet
+- bookingData affiché en grille si réservation aventure
+
+**Composant** : `ContactsPage.tsx` (400 lignes)
+- State : contacts, expandedRowId (gestion lignes extensibles)
+- Badges de type (contact / réservation)
+- Message préservé avec formatage (white-space: pre-wrap)
+
+**Particularités** :
+- Une seule ligne extensible à la fois
+- Bouton fermeture dans ligne étendue
+- Affichage conditionnel de bookingData
+- CSS séparé dans `src/styles/admin/contacts.css`
+
+---
+
+## 🔄 Migration d'autres pages (COMPLÉTÉ)
+
+✅ **Toutes les pages admin ont été refactorisées** :
+- `/admin/events/[id]` - Détails événement
+- `/admin/events` - Liste événements
+- `/admin/reservations` - Gestion réservations
+- `/admin/contacts` - Gestion contacts
+
+Pour référence, voici le pattern utilisé :
 
 ### 1. Créer les composants Preact
 
@@ -312,31 +403,57 @@ import ToastContainer from '../ui/ToastContainer';
 
 ## 🚀 Prochaines étapes possibles
 
-### 1. Refactoriser `/admin/events` (liste)
-- Composant `EventsTable.tsx`
-- Filtres par statut
-- Bouton "Créer événement"
+✅ **Toutes les pages admin sont refactorisées !**
 
-### 2. Refactoriser `/admin/contacts`
-- Composant `ContactsManager.tsx`
-- Lignes extensibles (remplacer le système actuel)
+Les améliorations futures peuvent inclure :
 
-### 3. Refactoriser `/admin/reservations`
-- Composant `ReservationsManager.tsx`
-- Export CSV côté composant
-
-### 4. Ajouter tests unitaires
+### 1. Ajouter tests unitaires
 ```bash
 bun add -d @testing-library/preact vitest
 ```
 
-### 5. CSS Modules (optionnel)
+**Exemple de test** :
+```typescript
+import { render, fireEvent } from '@testing-library/preact';
+import EventsListPage from '../islands/EventsListPage';
+
+test('should filter events by status', async () => {
+  const { getByLabelText } = render(<EventsListPage />);
+  const select = getByLabelText('Statut');
+  fireEvent.change(select, { target: { value: 'OPEN' } });
+  // Assert filtered results
+});
+```
+
+### 2. CSS Modules (optionnel)
+Actuellement, les styles sont en CSS global (`.badge`, `.btn-action`, etc.). On pourrait migrer vers CSS Modules pour éviter les conflits de noms :
+
 ```tsx
 // ActivityCard.module.css
 import styles from './ActivityCard.module.css';
 
 <div className={styles.card}>...</div>
 ```
+
+**Avantages** :
+- Scoped styles (pas de conflits)
+- Tree-shaking CSS
+- TypeScript autocomplete pour les classes
+
+**Inconvénients** :
+- Styles actuels fonctionnent bien
+- Cohérence avec le reste du site Anjou Explore
+
+### 3. Optimisations performances
+- Lazy loading pour modals (charger uniquement quand ouvert)
+- Virtual scrolling pour listes très longues (ex: 1000+ réservations)
+- React.memo pour éviter re-renders inutiles
+
+### 4. Améliorer l'accessibilité (a11y)
+- Ajouter aria-labels sur tous les boutons d'action
+- Navigation au clavier dans les tableaux
+- Focus management dans les modals
+- Annonces screen reader pour les toasts
 
 ---
 
@@ -375,16 +492,31 @@ import styles from './ActivityCard.module.css';
 
 ## ✨ Résumé
 
-**Avant** : 1100 lignes de TypeScript vanilla avec manipulation DOM manuelle
+**Avant** : 2364 lignes de TypeScript vanilla avec manipulation DOM manuelle (4 pages admin)
 **Après** : Code modulaire, typé, réactif et maintenable avec Preact
+
+**Pages refactorisées** :
+- ✅ `/admin/events/[id]` : 1100 lignes → EventDetailsPage.tsx + 4 sous-composants
+- ✅ `/admin/events` : 442 lignes → EventsListPage.tsx
+- ✅ `/admin/reservations` : 493 lignes → ReservationsPage.tsx + ReservationFilters.tsx
+- ✅ `/admin/contacts` : 329 lignes → ContactsPage.tsx
+
+**Composants créés** :
+- 4 composants UI réutilisables (Toast, ToastContainer, Modal, ConfirmDialog)
+- 4 pages principales (EventDetailsPage, EventsListPage, ReservationsPage, ContactsPage)
+- 5 sous-composants (EventInfoCard, ActivitiesManager, ActivityCard, StatsCard, ReservationFilters)
 
 **Gains** :
 - ✅ Séparation claire HTML/JS/CSS
-- ✅ Type-safety complète
-- ✅ Composants réutilisables
-- ✅ Testabilité améliorée
-- ✅ Réactivité automatique
-- ✅ Bundle ultra-léger (3kb)
+- ✅ Type-safety complète avec TypeScript
+- ✅ Composants réutilisables (DRY)
+- ✅ Testabilité améliorée (composants isolés)
+- ✅ Réactivité automatique (useState/useEffect)
+- ✅ Bundle ultra-léger (3kb Preact vs 45kb React)
 - ✅ Meilleure DX (Developer Experience)
+- ✅ Maintenance facilitée (code modulaire)
 
 🎉 **La philosophie Astro Islands est respectée !**
+- Server-Side Rendering par défaut
+- Hydratation sélective avec `client:load`
+- JavaScript uniquement où nécessaire
