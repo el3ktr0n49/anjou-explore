@@ -16,7 +16,11 @@
       "Bash(git commit:*)",
       "Bash(ren \"src\\\\pages\\\\evenements\\\\ae6.astro\" \"index.astro\")",
       "Bash(move \"src\\\\pages\\\\evenements\\\\index.astro\" \"src\\\\pages\\\\evenements\\\\ae6\\\\index.astro\")",
-      "Bash(git -C \"c:\\\\DEV\\\\WS\\\\anjouexplore\" status --short)"
+      "Bash(git -C \"c:\\\\DEV\\\\WS\\\\anjouexplore\" status --short)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(git diff:*)",
+      "Bash(cd:*)"
     ]
   }
 }

@@ -1,5 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import EventsListPage from '../../../components/admin/islands/EventsListPage';
 ---
 
 <Layout title="Gestion des Événements" description="Liste des événements Anjou Explore">
@@ -20,7 +21,7 @@ import Layout from '../../../layouts/Layout.astro';
             <h1 class="text-2xl md:text-3xl font-serif">Gestion des Événements</h1>
           </div>
           <p class="text-white/90 text-sm">
-            <span id="event-count">...</span> événements au total
+            Gestion complète des événements et activités
           </p>
         </div>
 
@@ -40,170 +41,13 @@ import Layout from '../../../layouts/Layout.astro';
   <!-- Main Content -->
   <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
     <div class="container mx-auto px-4 max-w-7xl">
-
-      <!-- Header with Create Button -->
-      <div class="flex justify-between items-center mb-6">
-        <div></div>
-        <button
-          id="create-event-btn"
-          class="flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white rounded-xl hover:shadow-lg transition font-medium"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          <span>Nouvel Événement</span>
-        </button>
-      </div>
-
-      <!-- Filtres -->
-      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-
-        <div class="p-6">
-          <h2 class="text-xl font-serif text-[var(--color-anjou-brown)] mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-            </svg>
-            Filtres
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Filtre Statut -->
-            <div>
-              <label for="filter-status" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
-                Statut
-              </label>
-              <select id="filter-status" class="filter-select">
-                <option value="">Tous les statuts</option>
-                <option value="DRAFT">Brouillon</option>
-                <option value="OPEN">Ouvert</option>
-                <option value="CLOSED">Fermé</option>
-                <option value="ARCHIVED">Archivé</option>
-              </select>
-            </div>
-
-            <!-- Placeholder -->
-            <div></div>
-
-            <!-- Bouton Rafraîchir -->
-            <div class="flex items-end">
-              <button id="refresh-btn" class="refresh-button">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Rafraîchir
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tableau des événements -->
-      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
-        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-
-        <!-- Loading state -->
-        <div id="loading-state" class="p-12 text-center">
-          <div class="inline-flex items-center space-x-2 text-[var(--color-anjou-olive)]">
-            <svg class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-sm font-medium">Chargement des événements...</span>
-          </div>
-        </div>
-
-        <!-- Table container -->
-        <div id="table-container" class="hidden overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-[var(--color-anjou-beige)]/30 border-b border-[var(--color-anjou-beige)]">
-              <tr>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-[var(--color-anjou-brown)] uppercase tracking-wider">
-                  Événement
-                </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-[var(--color-anjou-brown)] uppercase tracking-wider">
-                  Date
-                </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-[var(--color-anjou-brown)] uppercase tracking-wider">
-                  Statut
-                </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-[var(--color-anjou-brown)] uppercase tracking-wider">
-                  Activités
-                </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-[var(--color-anjou-brown)] uppercase tracking-wider">
-                  Réservations
-                </th>
-                <th class="px-6 py-4 text-right text-xs font-semibold text-[var(--color-anjou-brown)] uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody id="events-tbody" class="divide-y divide-[var(--color-anjou-beige)]/50">
-              <!-- Events will be inserted here -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Empty state -->
-        <div id="empty-state" class="hidden p-12 text-center">
-          <svg class="mx-auto h-16 w-16 text-[var(--color-anjou-olive)]/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-          <h3 class="text-lg font-medium text-[var(--color-anjou-brown)] mb-2">
-            Aucun événement trouvé
-          </h3>
-          <p class="text-sm text-[var(--color-anjou-olive)] mb-6">
-            Commencez par créer votre premier événement
-          </p>
-          <button
-            id="create-event-empty-btn"
-            class="inline-flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] text-white rounded-lg hover:shadow-lg transition font-medium"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            <span>Créer un événement</span>
-          </button>
-        </div>
-      </div>
-
+      {/* Astro Island with Preact */}
+      <EventsListPage client:load />
     </div>
   </section>
-
-  <!-- Modal: Confirmation -->
-  <div id="confirm-modal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content max-w-md">
-      <div class="modal-header border-b-2 border-red-200">
-        <h3 class="text-xl font-serif text-red-700 flex items-center">
-          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
-          Confirmation
-        </h3>
-        <button id="confirm-modal-close" class="modal-close">✕</button>
-      </div>
-      <div class="modal-body p-6">
-        <p id="confirm-message" class="text-[var(--color-anjou-brown)] mb-6"></p>
-        <div id="confirm-details" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
-          <p class="text-sm text-red-700 font-semibold mb-2">Cette action supprimera :</p>
-          <ul id="confirm-details-list" class="text-sm text-red-600 list-disc list-inside space-y-1"></ul>
-        </div>
-        <div class="flex justify-end gap-3">
-          <button id="confirm-cancel-btn" class="px-6 py-2.5 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">Annuler</button>
-          <button id="confirm-ok-btn" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
-            Confirmer
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3"></div>
 </Layout>
 
-<style>
+<style is:global>
   /* Filter Select */
   .filter-select {
     width: 100%;
@@ -295,31 +139,14 @@ import Layout from '../../../layouts/Layout.astro';
   }
 
   /* Force cursor pointer on SVG icons inside buttons */
-  .btn-action svg,
-  button[data-action="view-event"],
-  button[data-action="delete-event"] {
-    cursor: pointer !important;
-  }
-
-  /* Prevent SVG from blocking pointer events */
   .btn-action svg {
+    cursor: pointer !important;
     pointer-events: none;
   }
 
   .btn-action:hover {
     background: var(--color-anjou-beige)/30;
     transform: translateY(-2px);
-  }
-
-  /* Specific cursor rules for each button type */
-  button.btn-action.btn-view,
-  button.btn-action.btn-view:hover {
-    cursor: pointer !important;
-  }
-
-  button.btn-action.btn-delete,
-  button.btn-action.btn-delete:hover {
-    cursor: pointer !important;
   }
 
   .btn-action.btn-view:hover {
@@ -360,164 +187,15 @@ import Layout from '../../../layouts/Layout.astro';
   tbody tr:nth-child(3) { animation-delay: 0.15s; }
   tbody tr:nth-child(4) { animation-delay: 0.2s; }
   tbody tr:nth-child(5) { animation-delay: 0.25s; }
-
-  /* Modal Styles */
-  .modal {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-
-  .modal.hidden {
-    display: none !important;
-  }
-
-  .modal-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-  }
-
-  .modal-content {
-    position: relative;
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 32rem;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.5rem;
-  }
-
-  .modal-close {
-    padding: 0.5rem;
-    border: none;
-    background: transparent;
-    cursor: pointer !important;
-    font-size: 1.5rem;
-    color: var(--color-anjou-olive);
-    transition: all 0.2s;
-  }
-
-  .modal-close:hover {
-    color: var(--color-anjou-brown);
-    transform: scale(1.1);
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  /* Toast Styles */
-  .toast {
-    min-width: 320px;
-    max-width: 480px;
-    padding: 1rem 1.25rem;
-    border-radius: 0.875rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    animation: slideIn 0.3s ease;
-    backdrop-filter: blur(8px);
-  }
-
-  .toast-success {
-    background: white;
-    border: 2px solid #10b981;
-    border-left-width: 6px;
-    color: #065f46;
-  }
-
-  .toast-success .toast-icon {
-    color: #10b981;
-  }
-
-  .toast-error {
-    background: white;
-    border: 2px solid #ef4444;
-    border-left-width: 6px;
-    color: #991b1b;
-  }
-
-  .toast-error .toast-icon {
-    color: #ef4444;
-  }
-
-  .toast-info {
-    background: white;
-    border: 2px solid #3b82f6;
-    border-left-width: 6px;
-    color: #1e40af;
-  }
-
-  .toast-info .toast-icon {
-    color: #3b82f6;
-  }
-
-  .toast-icon {
-    flex-shrink: 0;
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  .toast-message {
-    flex: 1;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .toast-close {
-    flex-shrink: 0;
-    padding: 0.25rem;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-  }
-
-  .toast-close:hover {
-    opacity: 1;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes slideOut {
-    from {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-  }
-
-  .toast.slide-out {
-    animation: slideOut 0.3s ease forwards;
-  }
 </style>
 
-<script src="../../../scripts/admin/events.ts"></script>
+<script>
+  // Simple logout handler
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    });
+  }
+</script>
