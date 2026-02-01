@@ -27,7 +27,7 @@ Ce projet est une migration d'un site Wix vers une stack moderne basée sur Astr
 - Support natif des API endpoints pour backend (REST API)
 - Facilité d'évolution vers une architecture avec API/BDD (✅ fait)
 
-### Astro Islands + Preact (✅ Refactorisation 30 jan 2026)
+### Astro Islands + Preact (✅ Refactorisation 30-31 jan 2026)
 
 **Philosophie** : Utiliser Preact pour les composants interactifs complexes au lieu de TypeScript vanilla avec manipulation DOM.
 
@@ -60,22 +60,40 @@ import MyComponent from '../components/islands/MyComponent';
 **Structure composants** :
 ```
 src/components/admin/
-├── types.ts                    # Types partagés
-├── ui/                         # Composants réutilisables
-│   ├── Toast.tsx
-│   ├── Modal.tsx
-│   └── ConfirmDialog.tsx
-└── islands/                    # Astro Islands (interactifs)
-    ├── EventDetailsPage.tsx    # Orchestrateur principal
-    ├── EventInfoCard.tsx
-    └── ActivitiesManager.tsx
+├── types.ts                        # Types partagés (Event, Activity, ReservationFull, etc.)
+├── ui/                             # Composants UI réutilisables
+│   ├── Toast.tsx                   # Notification individuelle
+│   ├── ToastContainer.tsx          # Gestionnaire de toasts
+│   ├── Modal.tsx                   # Modal réutilisable
+│   └── ConfirmDialog.tsx           # Dialog de confirmation
+└── islands/                        # Astro Islands (composants interactifs)
+    ├── EventDetailsPage.tsx        # Page détails événement
+    ├── EventInfoCard.tsx           # Affichage/édition événement
+    ├── ActivitiesManager.tsx       # CRUD activités + tarifs
+    ├── ActivityCard.tsx            # Card d'une activité
+    ├── StatsCard.tsx               # Statistiques événement
+    ├── EventsListPage.tsx          # Page liste événements
+    ├── ReservationsPage.tsx        # Page gestion réservations
+    ├── ReservationFilters.tsx      # Filtres réservations
+    └── ContactsPage.tsx            # Page gestion contacts
+
+src/scripts/admin/                  # Scripts archivés (*.old)
+├── event-details.ts.old            # 1100 lignes → EventDetailsPage.tsx
+├── events.ts.old                   # 442 lignes → EventsListPage.tsx
+├── reservations.ts.old             # 493 lignes → ReservationsPage.tsx
+└── contacts.ts.old                 # 329 lignes → ContactsPage.tsx
 ```
 
-**Pages refactorées** :
-- ✅ `/admin/events/[id]` : Gestion événement (EventDetailsPage)
-- 🔜 `/admin/events` : Liste événements (EventsTable)
-- 🔜 `/admin/contacts` : Gestion contacts (ContactsManager)
-- 🔜 `/admin/reservations` : Gestion réservations (ReservationsManager)
+**Pages refactorées (TOUTES COMPLÉTÉES)** :
+- ✅ `/admin/events/[id]` : Gestion événement (EventDetailsPage) - 30 jan 2026
+- ✅ `/admin/events` : Liste événements (EventsListPage) - 31 jan 2026
+- ✅ `/admin/reservations` : Gestion réservations (ReservationsPage) - 31 jan 2026
+- ✅ `/admin/contacts` : Gestion contacts (ContactsPage) - 31 jan 2026
+
+**Statistiques** :
+- 2364 lignes de TypeScript vanilla refactorisées
+- 13 composants Preact créés (4 UI + 9 Islands)
+- 100% des pages admin migrées
 
 **Documentation complète** : Voir [REFACTOR_PREACT.md](REFACTOR_PREACT.md)
 
