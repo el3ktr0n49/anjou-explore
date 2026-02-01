@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import ContactsPage from '../../components/admin/islands/ContactsPage';
 import '../../styles/admin/contacts.css';
 ---
 
@@ -21,7 +22,7 @@ import '../../styles/admin/contacts.css';
             <h1 class="text-2xl md:text-3xl font-serif">Demandes de Contact</h1>
           </div>
           <p class="text-white/90 text-sm">
-            <span id="contact-count">...</span> demandes au total
+            Gestion complète des demandes de contact et réservations
           </p>
         </div>
 
@@ -41,120 +42,19 @@ import '../../styles/admin/contacts.css';
   <!-- Main Content -->
   <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
     <div class="container mx-auto px-4 max-w-7xl">
-
-      <!-- Filtres -->
-      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-
-        <div class="p-6">
-          <h2 class="text-xl font-serif text-[var(--color-anjou-brown)] mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-[var(--color-anjou-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-            </svg>
-            Filtres
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Filtre Statut -->
-            <div>
-              <label for="filter-status" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
-                Statut
-              </label>
-              <select id="filter-status" class="filter-select">
-                <option value="">Tous les statuts</option>
-                <option value="NEW">Nouveau</option>
-                <option value="PROCESSED">Traité</option>
-                <option value="ARCHIVED">Archivé</option>
-              </select>
-            </div>
-
-            <!-- Filtre Type -->
-            <div>
-              <label for="filter-type" class="block text-sm font-medium text-[var(--color-anjou-brown)] mb-2">
-                Type
-              </label>
-              <select id="filter-type" class="filter-select">
-                <option value="">Tous les types</option>
-                <option value="contact">Contact simple</option>
-                <option value="booking">Demande réservation</option>
-              </select>
-            </div>
-
-            <!-- Bouton Rafraîchir -->
-            <div class="flex items-end">
-              <button id="refresh-btn" class="refresh-button">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Rafraîchir
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tableau des contacts -->
-      <div class="bg-white rounded-2xl shadow-lg border border-[var(--color-anjou-beige)]/50 overflow-hidden">
-        <div class="bg-gradient-to-r from-[var(--color-anjou-gold)] to-[var(--color-anjou-olive)] h-1.5"></div>
-
-        <!-- Loading state -->
-        <div id="loading-state" class="p-8 text-center">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[var(--color-anjou-gold)] border-t-transparent"></div>
-          <p class="text-[var(--color-anjou-olive)] mt-4">Chargement des contacts...</p>
-        </div>
-
-        <!-- Empty state -->
-        <div id="empty-state" class="hidden p-8 text-center">
-          <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-          </svg>
-          <p class="text-gray-500 text-lg">Aucune demande de contact</p>
-        </div>
-
-        <!-- Table -->
-        <div id="table-container" class="hidden overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-[var(--color-anjou-beige)]/30">
-              <tr>
-                <th class="table-header">Date</th>
-                <th class="table-header">Nom</th>
-                <th class="table-header">Email</th>
-                <th class="table-header">Téléphone</th>
-                <th class="table-header">Type</th>
-                <th class="table-header">Statut</th>
-                <th class="table-header">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="contacts-tbody">
-              <!-- Rows will be inserted by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
+      {/* Astro Island with Preact */}
+      <ContactsPage client:load />
     </div>
   </section>
-
 </Layout>
 
 <script>
-  import { loadContacts, toggleMessageRow, updateStatus, deleteContact } from '../../scripts/admin/contacts.ts';
-
-  // Event listeners
-  document.getElementById('logout-btn')?.addEventListener('click', async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/admin/login';
-  });
-
-  document.getElementById('filter-status')?.addEventListener('change', loadContacts);
-  document.getElementById('filter-type')?.addEventListener('change', loadContacts);
-  document.getElementById('refresh-btn')?.addEventListener('click', loadContacts);
-
-  // Exposer les fonctions globalement pour les onclick
-  (window as any).toggleMessageRow = toggleMessageRow;
-  (window as any).updateStatus = updateStatus;
-  (window as any).deleteContact = deleteContact;
-
-  // Charger les contacts au chargement
-  loadContacts();
+  // Simple logout handler
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    });
+  }
 </script>
