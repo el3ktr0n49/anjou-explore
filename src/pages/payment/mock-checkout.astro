@@ -1,0 +1,248 @@
+---
+/**
+ * Page de simulation du checkout SumUp (pour développement)
+ * Cette page simule l'interface de paiement SumUp en mode développement
+ */
+
+const url = new URL(Astro.request.url);
+const reservationId = url.searchParams.get('reservationId');
+const amount = url.searchParams.get('amount');
+
+if (!reservationId) {
+  return Astro.redirect('/');
+}
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SumUp Mock Checkout</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px;
+    }
+    .mock-badge {
+      background: #ff6b6b;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    .amount {
+      font-size: 48px;
+      font-weight: 700;
+      color: #2d3748;
+      margin: 30px 0;
+      text-align: center;
+    }
+    .info {
+      background: #f7fafc;
+      border-left: 4px solid #667eea;
+      padding: 16px;
+      margin: 20px 0;
+      border-radius: 4px;
+      color: #4a5568;
+      font-size: 14px;
+    }
+    .card-form {
+      margin: 30px 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-pay {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-pay:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn-cancel {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    .btn-cancel:hover {
+      background: #cbd5e0;
+    }
+    .countdown {
+      text-align: center;
+      color: #718096;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="mock-badge">🧪 MODE SIMULATION - DÉVELOPPEMENT</div>
+
+    <h1>Paiement Sécurisé</h1>
+    <p style="color: #718096; margin-bottom: 20px;">Simulateur de paiement SumUp</p>
+
+    <div class="amount">{amount}€</div>
+
+    <div class="info">
+      <strong>ℹ️ Mode Test</strong><br>
+      Ceci est une simulation. Aucun paiement réel ne sera effectué. Vous pouvez utiliser n'importe quelle carte de test.
+    </div>
+
+    <form class="card-form" id="payment-form">
+      <div class="form-group">
+        <label for="card-number">Numéro de carte</label>
+        <input
+          type="text"
+          id="card-number"
+          value="4242 4242 4242 4242"
+          placeholder="1234 5678 9012 3456"
+          maxlength="19"
+        >
+      </div>
+
+      <div style="display: flex; gap: 16px;">
+        <div class="form-group" style="flex: 1;">
+          <label for="expiry">Date d'expiration</label>
+          <input
+            type="text"
+            id="expiry"
+            value="12/28"
+            placeholder="MM/YY"
+            maxlength="5"
+          >
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="cvc">CVC</label>
+          <input
+            type="text"
+            id="cvc"
+            value="123"
+            placeholder="123"
+            maxlength="3"
+          >
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn-cancel" id="cancel-btn">Annuler</button>
+        <button type="submit" class="btn-pay" id="pay-btn">Payer {amount}€</button>
+      </div>
+    </form>
+
+    <div class="countdown" id="countdown">
+      Redirection automatique dans <span id="timer">5</span>s...
+    </div>
+  </div>
+
+  <script define:vars={{ reservationId }}>
+    const form = document.getElementById('payment-form');
+    const payBtn = document.getElementById('pay-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const countdownEl = document.getElementById('countdown');
+    const timerEl = document.getElementById('timer');
+
+    let countdown = 5;
+    const interval = setInterval(() => {
+      countdown--;
+      timerEl.textContent = countdown;
+
+      if (countdown <= 0) {
+        clearInterval(interval);
+        simulatePayment();
+      }
+    }, 1000);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      clearInterval(interval);
+      simulatePayment();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      clearInterval(interval);
+      window.location.href = `/payment/return?reservationId=${reservationId}`;
+    });
+
+    function simulatePayment() {
+      payBtn.textContent = 'Traitement en cours...';
+      payBtn.disabled = true;
+      cancelBtn.disabled = true;
+      countdownEl.textContent = 'Traitement du paiement...';
+
+      // Simuler un délai de traitement
+      setTimeout(() => {
+        // Rediriger vers la page de retour
+        // En mode mock, le webhook sera appelé automatiquement côté serveur
+        window.location.href = `/payment/return?reservationId=${reservationId}`;
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

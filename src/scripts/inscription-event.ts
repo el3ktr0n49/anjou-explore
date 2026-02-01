@@ -195,23 +195,49 @@ async function handleSubmit(e: Event) {
       return;
     }
 
-    // Success!
+    // Success! Reservation created, now initialize payment
     showMessage(
-      `✅ Réservation confirmée ! Montant : ${parseFloat(data.amount).toFixed(2)}€. Vous allez recevoir un email de confirmation.`,
+      `✅ Réservation créée ! Redirection vers le paiement sécurisé...`,
       'success'
     );
 
-    // Reset form
-    form.reset();
-    updateTotal();
+    // Wait 1 second to let user see the message
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Update button text
+    submitText.textContent = 'Initialisation du paiement...';
 
-    // Optional: Redirect to payment page (Phase F)
-    // setTimeout(() => {
-    //   window.location.href = `/payment/${data.reservationId}`;
-    // }, 2000);
+    try {
+      // Initialize SumUp payment
+      const paymentResponse = await fetch('/api/public/payments/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reservationId: data.reservationId,
+        }),
+      });
+
+      const paymentData = await paymentResponse.json();
+
+      if (!paymentResponse.ok) {
+        showMessage(
+          `Erreur lors de l'initialisation du paiement: ${paymentData.error || 'Erreur inconnue'}`,
+          'error'
+        );
+        return;
+      }
+
+      // Redirect to SumUp hosted checkout
+      window.location.href = paymentData.checkoutUrl;
+    } catch (paymentError) {
+      console.error('Erreur initialisation paiement:', paymentError);
+      showMessage(
+        'Erreur lors de l\'initialisation du paiement. Veuillez nous contacter.',
+        'error'
+      );
+    }
   } catch (error) {
     console.error('Erreur réseau:', error);
     showMessage('Erreur de connexion. Veuillez réessayer.', 'error');

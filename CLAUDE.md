@@ -1419,14 +1419,170 @@ async function getAvailableSpots(activityId: string, maxParticipants: number | n
 
 ---
 
+#### Phase F : Paiements SumUp (✅ Complété - 1er février 2026)
+
+**Intégration complète des paiements SumUp avec emails de confirmation Resend**
+
+**Objectif** : Permettre aux utilisateurs de payer en ligne leurs réservations via SumUp hosted checkout.
+
+**Architecture Implémentée** :
+
+```
+Utilisateur remplit formulaire → Création Reservation (PENDING)
+→ Initialisation checkout SumUp → Redirection vers page paiement SumUp
+→ Utilisateur paye → Webhook callback → Mise à jour Reservation (PAID)
+→ Email confirmation Resend
+```
+
+**Fichiers créés** :
+
+1. **Service SumUp** : `src/lib/services/sumupService.ts`
+   - `createCheckout()` : Crée un checkout avec hosted checkout activé
+   - `getCheckout()` : Récupère le statut d'un checkout
+   - `isCheckoutPaid()` : Vérifie si payé
+   - Types : `SumUpCheckoutRequest`, `SumUpCheckoutResponse`, `SumUpCheckoutDetails`
+
+2. **Endpoint Checkout** : `src/pages/api/public/payments/checkout.ts`
+   - `POST /api/public/payments/checkout`
+   - Body : `{ reservationId: string }`
+   - Crée checkout SumUp + `PaymentTransaction` (INITIATED)
+   - Retourne : `{ checkoutUrl, checkoutId }`
+   - Protections : Vérifie pas déjà payé, réutilise transaction < 1h
+
+3. **Webhook SumUp** : `src/pages/api/webhooks/sumup.ts`
+   - `POST /api/webhooks/sumup`
+   - Reçoit notification de SumUp (payload flexible)
+   - Vérifie statut réel via API (sécurité)
+   - Met à jour `PaymentTransaction` et `Reservation`
+   - Envoie email si PAID
+
+4. **Service Email** : `src/lib/email/templates.ts`
+   - `sendPaymentConfirmationEmail()` : Email HTML élégant
+   - `sendPaymentFailedEmail()` : Email d'échec (optionnel)
+   - Template responsive avec gradient or/olive
+   - Helpers : `formatDate()`, `formatAmount()`, `formatParticipants()`
+
+5. **Page de retour** : `src/pages/payment/return.astro`
+   - Route : `/payment/return?reservationId=xxx`
+   - Affiche statut : PAID (succès) | PENDING (attente) | FAILED (échec) | NOT FOUND
+   - Design avec cards et gradients selon statut
+   - Boutons : Retour accueil, Voir événement, Réessayer
+
+6. **Script modifié** : `src/scripts/inscription-event.ts`
+   - Après création réservation : Initialise paiement SumUp
+   - Redirection automatique vers `checkoutUrl`
+
+**Variables d'environnement** :
+```bash
+# IMPORTANT : Utiliser sup_sk_xxx (Secret Key), pas sup_pk_xxx (Public Key)
+SUMUP_API_KEY="sup_sk_KRAfX9QRo5yPKa4wf2NUNvULyDIiopDCP"  # Secret Key (compte sandbox)
+SUMUP_MERCHANT_CODE="M74XACCM"  # Code marchand (prioritaire sur pay_to_email)
+SUMUP_PAY_TO_EMAIL="adrienlem2@gmail.com"  # Email marchand (fallback)
+RESEND_API_KEY="re_aEx279DP_NNq7FN296riUJk25GzcrAkEb"
+EMAIL_FROM="anjouexplore@gmail.com"
+```
+
+**Workflow Complet** :
+
+1. Utilisateur remplit formulaire → `POST /api/public/reservations/create`
+2. Réservation créée (PENDING) → Frontend appelle `POST /api/public/payments/checkout`
+3. Backend crée checkout SumUp → Retourne `checkoutUrl`
+4. Frontend redirige vers SumUp hosted page
+5. Utilisateur paye (carte test : `4242 4242 4242 4242`)
+6. SumUp traite paiement → Envoie webhook à notre backend
+7. Webhook vérifie statut → Met à jour BDD → Envoie email
+8. SumUp redirige vers `/payment/return?reservationId=xxx`
+9. Page affiche "Paiement réussi !" avec détails
+
+**Statuts PaymentTransaction** :
+- `INITIATED` : Checkout créé, en attente de paiement
+- `PENDING` : Paiement en cours
+- `COMPLETED` : Paiement réussi
+- `FAILED` : Paiement échoué
+- `EXPIRED` : Checkout expiré (pas payé après 1h)
+- `CANCELLED` : Annulé par l'utilisateur
+
+**Correctifs et améliorations** :
+
+1. **Clé API SumUp** (Problème initial 401 Unauthorized)
+   - ❌ Problème : `sup_pk_xxx` (Public Key) → Erreur 401
+   - ✅ Solution : `sup_sk_xxx` (Secret Key) pour appels serveur-side
+   - Test curl validé avec la vraie clé
+
+2. **Paramètre requis `pay_to_email`**
+   - ❌ Problème : Erreur "Validation error: pay_to_email or merchant_code"
+   - ✅ Solution : Ajout de `pay_to_email` dans la requête checkout
+   - Référence : [sumupService.ts](src/lib/services/sumupService.ts:85)
+
+3. **Priorité `merchant_code` > `pay_to_email`**
+   - 🎯 Objectif : Cibler précisément le compte sandbox "anjou-explore" (M74XACCM)
+   - ✅ Solution : Logique conditionnelle avec priorité merchant_code
+   - Évite confusion avec compte principal "Ratons" (M2C95PTG)
+   ```typescript
+   ...(SUMUP_MERCHANT_CODE
+     ? { merchant_code: SUMUP_MERCHANT_CODE }
+     : { pay_to_email: SUMUP_PAY_TO_EMAIL })
+   ```
+
+4. **Webhook ne fonctionne pas en local** (Problème fondamental)
+   - ❌ Problème : localhost non accessible par SumUp
+   - ✅ Solution : Endpoint de fallback `/api/public/payments/check-status`
+   - Vérifie le statut via API SumUp directement
+   - Auto-refresh sur page de retour si status = "pending"
+   - Script vérifie toutes les 3 secondes pendant 30 secondes
+
+5. **Vérification sécurisée du statut** (Conformité SumUp)
+   - 🔒 Implémentation : "Always verify if the event really took place"
+   - Webhook appelle `getCheckout(checkoutId)` avant de mettre à jour la BDD
+   - Protection contre webhooks falsifiés et attaques MITM
+   - Référence : [webhooks/sumup.ts](src/pages/api/webhooks/sumup.ts:68-70)
+
+**Fichiers supplémentaires créés** :
+- `src/pages/api/public/payments/check-status.ts` - Fallback pour dev local
+- `src/pages/payment/mock-checkout.astro` - Simulateur (non utilisé finalement)
+- `src/lib/services/sumupService.mock.ts` - Mock service (non utilisé finalement)
+
+**Tests** :
+- ✅ Création checkout et redirection SumUp (vraie page hébergée)
+- ✅ Paiement test réussi (carte `4242 4242 4242 4242`)
+- ✅ Fallback check-status fonctionne en dev local
+- ✅ Page retour se rafraîchit automatiquement après vérification
+- ✅ BDD mise à jour (`Reservation.paymentStatus = PAID`)
+- ✅ `PaymentTransaction` créée et complétée
+- ✅ Email de confirmation Resend envoyé
+- ✅ Merchant code correct (anjou-explore M74XACCM)
+
+**Mode Test vs Production** :
+- Test : `sup_pk_...` (Public Key), carte `4242 4242 4242 4242`, montant 11.00 = échec intentionnel
+- Prod : `sup_sk_...` (Secret Key), vraies cartes, webhook configuré sur SumUp Dashboard
+
+**Documentation complète** :
+- [`PHASE_F_TESTS.md`](PHASE_F_TESTS.md) : Guide de test détaillé (10 tests)
+- [`PHASE_F_SUMMARY.md`](PHASE_F_SUMMARY.md) : Récapitulatif complet de la phase
+
+**Documentation complète** :
+- [`PHASE_F_TESTS.md`](PHASE_F_TESTS.md) : Guide de test détaillé (10 tests)
+- [`PHASE_F_SUMMARY.md`](PHASE_F_SUMMARY.md) : Récapitulatif technique complet
+
+**Notes de développement** :
+- En dev local : Webhook ne fonctionne pas (localhost), fallback check-status activé
+- En production : Configurer webhook URL sur SumUp Dashboard
+- Secret Key vs Public Key : Toujours utiliser `sup_sk_xxx` pour backend
+- Vérification sécurisée : Toujours appeler API SumUp après webhook
+- Merchant code : Permet de cibler précisément un compte (multi-comptes SumUp)
+
+**Dernier commit Phase F** : `feat(phase-f): intégration complète paiements SumUp + emails Resend`
+
+---
+
 ### 📋 À faire
 
-#### Phase F : Paiements SumUp (Après Phase D)
-- [ ] Configuration compte SumUp
-- [ ] Workflow checkout SumUp dans formulaire événement
-- [ ] Webhook callback `/api/webhooks/sumup`
-- [ ] Email confirmation paiement Resend
-- [ ] Gestion des remboursements
+#### Phase F+ : Améliorations Paiements (Optionnel)
+- [ ] Gestion des remboursements (API SumUp refund)
+- [ ] Export CSV des transactions
+- [ ] Dashboard analytics revenus
+- [ ] Retry automatique paiements échoués
+- [ ] Email de rappel si paiement en attente > 24h
 
 #### À venir
 - [ ] Page Témoignages

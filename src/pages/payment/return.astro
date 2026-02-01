@@ -1,0 +1,334 @@
+---
+/**
+ * Page de retour après paiement SumUp
+ * URL: /payment/return?reservationId=xxx
+ */
+
+import Layout from '../../layouts/Layout.astro';
+import { prisma } from '../../lib/db/client';
+
+// Récupérer le reservationId depuis les query params
+const url = new URL(Astro.request.url);
+const reservationId = url.searchParams.get('reservationId');
+
+let status: 'loading' | 'paid' | 'pending' | 'failed' | 'not-found' = 'loading';
+let reservation: any = null;
+let event: any = null;
+
+if (reservationId) {
+  try {
+    // Récupérer la réservation depuis la BDD
+    reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        event: {
+          select: {
+            name: true,
+            slug: true,
+            date: true,
+          },
+        },
+        paymentTransactions: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (reservation) {
+      event = reservation.event;
+      status = reservation.paymentStatus === 'PAID' ? 'paid' :
+               reservation.paymentStatus === 'FAILED' ? 'failed' : 'pending';
+    } else {
+      status = 'not-found';
+    }
+  } catch (error) {
+    console.error('[Payment Return] Erreur:', error);
+    status = 'not-found';
+  }
+}
+
+// Formater les participants
+function formatParticipants(participants: any): string {
+  const parts: string[] = [];
+  for (const [type, count] of Object.entries(participants as Record<string, number>)) {
+    if (count > 0) {
+      parts.push(`${count} ${type}${count > 1 ? 's' : ''}`);
+    }
+  }
+  return parts.join(', ');
+}
+
+// Formater la date
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
+// Formater le montant
+function formatAmount(amount: any): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(Number(amount));
+}
+---
+
+<Layout title={status === 'paid' ? 'Paiement réussi' : 'Retour paiement'}>
+  <main class="min-h-screen bg-gradient-to-b from-[#f5f1e8] to-white py-12 px-4">
+    <div class="max-w-2xl mx-auto">
+
+      {/* ============================================ */}
+      {/* PAIEMENT RÉUSSI */}
+      {/* ============================================ */}
+      {status === 'paid' && reservation && (
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Header Success */}
+          <div class="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-12 text-center">
+            <div class="text-6xl mb-4">✓</div>
+            <h1 class="text-3xl font-bold mb-2">Paiement réussi !</h1>
+            <p class="text-green-100 text-lg">Votre réservation est confirmée</p>
+          </div>
+
+          {/* Content */}
+          <div class="p-8">
+            <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+              <p class="text-green-800">
+                <strong>Merci {reservation.prenom} !</strong><br>
+                Un email de confirmation vient d'être envoyé à <strong>{reservation.email}</strong>
+              </p>
+            </div>
+
+            {/* Détails réservation */}
+            <div class="space-y-4 mb-8">
+              <h2 class="text-xl font-semibold text-gray-900 mb-4">Détails de votre réservation</h2>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2 sm:col-span-1">
+                  <div class="text-sm text-gray-500">Événement</div>
+                  <div class="font-semibold">{event.name}</div>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                  <div class="text-sm text-gray-500">Date</div>
+                  <div class="font-semibold">{formatDate(new Date(event.date))}</div>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                  <div class="text-sm text-gray-500">Activité</div>
+                  <div class="font-semibold">{reservation.activityName}</div>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                  <div class="text-sm text-gray-500">Participants</div>
+                  <div class="font-semibold">{formatParticipants(reservation.participants)}</div>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                  <div class="text-sm text-gray-500">Référence</div>
+                  <div class="font-mono text-sm">{reservation.id.slice(0, 8).toUpperCase()}</div>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                  <div class="text-sm text-gray-500">Montant payé</div>
+                  <div class="font-bold text-green-600 text-lg">{formatAmount(reservation.amount)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+              <h3 class="font-semibold text-gray-900 mb-3">Des questions ?</h3>
+              <p class="text-gray-600 mb-3">N'hésitez pas à nous contacter :</p>
+              <div class="space-y-2 text-sm">
+                <div>📞 <a href="tel:0683924503" class="text-[#c4a571] hover:underline">06.83.92.45.03</a></div>
+                <div>📧 <a href="mailto:anjouexplore@gmail.com" class="text-[#c4a571] hover:underline">anjouexplore@gmail.com</a></div>
+              </div>
+            </div>
+
+            {/* Boutons */}
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a
+                href="/"
+                class="flex-1 bg-[#c4a571] text-white py-3 px-6 rounded-lg text-center font-semibold hover:bg-[#b39461] transition-colors"
+              >
+                Retour à l'accueil
+              </a>
+              <a
+                href={`/evenements/${event.slug}`}
+                class="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg text-center font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Voir l'événement
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================ */}
+      {/* PAIEMENT EN ATTENTE */}
+      {/* ============================================ */}
+      {status === 'pending' && reservation && (
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Header Pending */}
+          <div class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-12 text-center">
+            <div class="text-6xl mb-4">⏳</div>
+            <h1 class="text-3xl font-bold mb-2">Paiement en attente</h1>
+            <p class="text-yellow-100 text-lg">Votre paiement est en cours de traitement</p>
+          </div>
+
+          <div class="p-8">
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
+              <p class="text-yellow-800">
+                <strong>Que faire maintenant ?</strong><br>
+                Si vous avez effectué le paiement, il peut prendre quelques minutes pour être confirmé.
+                Vous recevrez un email dès que votre réservation sera validée.
+              </p>
+            </div>
+
+            <div class="space-y-4 mb-8">
+              <p class="text-gray-600">
+                Si vous rencontrez un problème ou si le paiement ne se confirme pas,
+                contactez-nous au <a href="tel:0683924503" class="text-[#c4a571] font-semibold hover:underline">06.83.92.45.03</a>
+              </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a
+                href="/"
+                class="flex-1 bg-[#c4a571] text-white py-3 px-6 rounded-lg text-center font-semibold hover:bg-[#b39461] transition-colors"
+              >
+                Retour à l'accueil
+              </a>
+              <button
+                onclick="window.location.reload()"
+                class="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg text-center font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Rafraîchir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================ */}
+      {/* PAIEMENT ÉCHOUÉ */}
+      {/* ============================================ */}
+      {status === 'failed' && reservation && (
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Header Failed */}
+          <div class="bg-gradient-to-r from-red-500 to-red-600 text-white px-8 py-12 text-center">
+            <div class="text-6xl mb-4">✕</div>
+            <h1 class="text-3xl font-bold mb-2">Paiement échoué</h1>
+            <p class="text-red-100 text-lg">Une erreur est survenue lors du paiement</p>
+          </div>
+
+          <div class="p-8">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+              <p class="text-red-800">
+                <strong>Que s'est-il passé ?</strong><br>
+                Votre paiement n'a pas pu être traité. Cela peut être dû à un problème avec votre moyen de paiement ou une annulation.
+              </p>
+            </div>
+
+            <div class="space-y-4 mb-8">
+              <p class="text-gray-600">
+                Vous pouvez réessayer en cliquant sur le bouton ci-dessous, ou nous contacter directement.
+              </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a
+                href={`/evenements/${event.slug}/inscriptions`}
+                class="flex-1 bg-[#c4a571] text-white py-3 px-6 rounded-lg text-center font-semibold hover:bg-[#b39461] transition-colors"
+              >
+                Réessayer
+              </a>
+              <a
+                href="/"
+                class="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg text-center font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Retour à l'accueil
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================ */}
+      {/* RÉSERVATION INTROUVABLE */}
+      {/* ============================================ */}
+      {(status === 'not-found' || !reservationId) && (
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-8 py-12 text-center">
+            <div class="text-6xl mb-4">?</div>
+            <h1 class="text-3xl font-bold mb-2">Réservation introuvable</h1>
+          </div>
+
+          <div class="p-8">
+            <p class="text-gray-600 mb-6">
+              Nous n'avons pas pu retrouver votre réservation. Vérifiez le lien reçu ou contactez-nous.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a
+                href="/"
+                class="flex-1 bg-[#c4a571] text-white py-3 px-6 rounded-lg text-center font-semibold hover:bg-[#b39461] transition-colors"
+              >
+                Retour à l'accueil
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  </main>
+
+  {/* Script de vérification automatique du statut (fallback pour dev local) */}
+  {status === 'pending' && reservationId && (
+    <script is:inline define:vars={{ reservationId }}>
+      // Vérifier automatiquement le statut au chargement
+      async function checkPaymentStatus() {
+        try {
+          console.log('[Payment Return] Vérification automatique du statut...');
+
+          const response = await fetch(`/api/public/payments/check-status?reservationId=${reservationId}`);
+
+          if (!response.ok) {
+            console.error('[Payment Return] Erreur lors de la vérification:', response.status);
+            return;
+          }
+
+          const data = await response.json();
+          console.log('[Payment Return] Statut reçu:', data.status);
+
+          // Si le statut a changé, rafraîchir la page
+          if (data.status === 'PAID' || data.updated) {
+            console.log('[Payment Return] Statut mis à jour, rechargement de la page...');
+            window.location.reload();
+          }
+        } catch (error) {
+          console.error('[Payment Return] Erreur réseau:', error);
+        }
+      }
+
+      // Vérifier immédiatement au chargement
+      checkPaymentStatus();
+
+      // Puis vérifier toutes les 3 secondes (au cas où)
+      const interval = setInterval(checkPaymentStatus, 3000);
+
+      // Arrêter après 30 secondes (10 tentatives)
+      setTimeout(() => {
+        clearInterval(interval);
+        console.log('[Payment Return] Arrêt de la vérification automatique');
+      }, 30000);
+    </script>
+  )}
+</Layout>
