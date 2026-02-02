@@ -1,9 +1,9 @@
 /**
  * POST /api/public/payments/checkout
  *
- * Initialise un paiement SumUp pour une réservation.
+ * Initialise un paiement SumUp pour une réservation ou un groupe de réservations.
  *
- * Body: { reservationId: string }
+ * Body: { groupId?: string, reservationId?: string } (un des deux requis)
  * Response: { checkoutUrl: string, checkoutId: string }
  */
 
@@ -11,13 +11,17 @@ import type { APIRoute } from 'astro';
 import { z } from 'astro/zod';
 import { prisma } from '../../../../lib/db/client';
 import { createCheckout } from '../../../../lib/services/sumupService';
+import { Prisma } from '@prisma/client';
 
 // ============================================================================
-// VALIDATION 
+// VALIDATION
 // ============================================================================
 
 const checkoutRequestSchema = z.object({
-  reservationId: z.string().uuid(),
+  groupId: z.string().uuid().optional(),
+  reservationId: z.string().uuid().optional(),
+}).refine(data => data.groupId || data.reservationId, {
+  message: 'groupId ou reservationId requis',
 });
 
 // ============================================================================
@@ -28,16 +32,23 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     // 1. Parser et valider le body
     const body = await request.json();
-    const { reservationId } = checkoutRequestSchema.parse(body);
+    const { groupId, reservationId } = checkoutRequestSchema.parse(body);
 
-    // 2. Récupérer la réservation avec l'événement
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+    // 2. Récupérer les réservations (soit par groupId, soit une seule)
+    const reservations = await prisma.reservation.findMany({
+      where: groupId
+        ? { groupId }
+        : { id: reservationId },
       include: {
         event: {
           select: {
             name: true,
             slug: true,
+          },
+        },
+        activity: {
+          select: {
+            name: true,
           },
         },
         paymentTransactions: {
@@ -54,24 +65,30 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
 
-    if (!reservation) {
+    if (reservations.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Réservation introuvable' }),
+        JSON.stringify({ error: 'Réservation(s) introuvable(s)' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // 3. Vérifier que la réservation n'est pas déjà payée
-    if (reservation.paymentStatus === 'PAID') {
+    const firstReservation = reservations[0];
+
+    // 3. Vérifier qu'aucune réservation n'est déjà payée
+    if (reservations.some(r => r.paymentStatus === 'PAID')) {
       return new Response(
-        JSON.stringify({ error: 'Cette réservation est déjà payée' }),
+        JSON.stringify({ error: 'Une ou plusieurs réservations sont déjà payées' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     // 4. Vérifier qu'il n'y a pas déjà une transaction en cours
-    if (reservation.paymentTransactions.length > 0) {
-      const activeTransaction = reservation.paymentTransactions[0];
+    const activeTransactions = reservations
+      .flatMap(r => r.paymentTransactions)
+      .filter(t => t !== null);
+
+    if (activeTransactions.length > 0) {
+      const activeTransaction = activeTransactions[0];
 
       // Si transaction récente (moins de 1h), retourner l'URL existante
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -86,48 +103,66 @@ export const POST: APIRoute = async ({ request }) => {
         );
       }
 
-      // Sinon, marquer l'ancienne transaction comme EXPIRED
-      await prisma.paymentTransaction.update({
-        where: { id: activeTransaction.id },
+      // Sinon, marquer toutes les anciennes transactions comme EXPIRED
+      for (const transaction of activeTransactions) {
+        await prisma.paymentTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'EXPIRED',
+            expiredAt: new Date(),
+          },
+        });
+      }
+    }
+
+    // 5. Calculer le montant total
+    const totalAmount = reservations.reduce(
+      (sum, r) => sum.add(new Prisma.Decimal(r.amount)),
+      new Prisma.Decimal(0)
+    );
+
+    // 6. Construire la description (liste des activités)
+    const activitiesDescription = reservations
+      .map(r => r.activity?.name || r.activityName)
+      .filter((name, index, self) => self.indexOf(name) === index) // Unique
+      .join(', ');
+
+    // 7. Construire l'URL de retour
+    const appUrl = process.env.APP_URL || 'http://localhost:4321';
+    const returnParam = groupId ? `groupId=${groupId}` : `reservationId=${reservationId}`;
+    const redirectUrl = `${appUrl}/payment/return?${returnParam}`;
+
+    // 8. Créer le checkout SumUp
+    const checkout = await createCheckout({
+      amount: Number(totalAmount),
+      currency: 'EUR',
+      checkoutReference: groupId || reservationId || '',
+      description: `${firstReservation.event.name} - ${activitiesDescription} - ${firstReservation.prenom} ${firstReservation.nom}`,
+      redirectUrl,
+    });
+
+    // 9. Créer une transaction de paiement pour chaque réservation
+    for (const reservation of reservations) {
+      await prisma.paymentTransaction.create({
         data: {
-          status: 'EXPIRED',
-          expiredAt: new Date(),
+          reservationId: reservation.id,
+          checkoutId: checkout.id,
+          amount: reservation.amount,
+          currency: 'EUR',
+          status: 'INITIATED',
+          checkoutUrl: checkout.hostedCheckoutUrl,
+          sumupResponse: checkout as any,
         },
       });
     }
 
-    // 5. Construire l'URL de retour
-    const appUrl = process.env.APP_URL || 'http://localhost:4321';
-    const redirectUrl = `${appUrl}/payment/return?reservationId=${reservationId}`;
-
-    // 6. Créer le checkout SumUp
-    const checkout = await createCheckout({
-      amount: Number(reservation.amount),
-      currency: 'EUR',
-      checkoutReference: reservationId,
-      description: `Réservation ${reservation.event.name} - ${reservation.prenom} ${reservation.nom}`,
-      redirectUrl,
-    });
-
-    // 7. Créer la transaction de paiement en BDD
-    await prisma.paymentTransaction.create({
-      data: {
-        reservationId: reservation.id,
-        checkoutId: checkout.id,
-        amount: reservation.amount,
-        currency: 'EUR',
-        status: 'INITIATED',
-        checkoutUrl: checkout.hostedCheckoutUrl,
-        sumupResponse: checkout as any, // Stocker la réponse complète
-      },
-    });
-
-    // 8. Retourner l'URL de checkout
+    // 10. Retourner l'URL de checkout
     return new Response(
       JSON.stringify({
         success: true,
         checkoutUrl: checkout.hostedCheckoutUrl,
         checkoutId: checkout.id,
+        reservationsCount: reservations.length,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

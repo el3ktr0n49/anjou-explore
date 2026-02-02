@@ -223,44 +223,58 @@ export const POST: APIRoute = async (context) => {
       }
     }
 
-    // 6. Déterminer l'activité principale (celle avec le plus de participants)
-    let mainActivityId = '';
-    let maxParticipants = 0;
+    // 6. Générer un groupId unique pour lier les réservations ensemble
+    const groupId = crypto.randomUUID();
+
+    // 7. Créer une réservation par activité
+    const createdReservations: string[] = [];
 
     for (const [activityId, participants] of Object.entries(participantsByActivity)) {
-      const total = Object.values(participants).reduce((sum, qty) => sum + qty, 0);
-      if (total > maxParticipants) {
-        maxParticipants = total;
-        mainActivityId = activityId;
+      const activity = event.activities.find((a) => a.id === activityId);
+
+      if (!activity) {
+        console.error(`Activité introuvable: ${activityId}`);
+        continue; // Ne devrait pas arriver grâce à la validation précédente
       }
+
+      // Calculer le montant pour cette activité uniquement
+      let activityAmount = new Prisma.Decimal(0);
+
+      for (const [priceType, quantity] of Object.entries(participants)) {
+        const pricing = activity.pricing.find((p) => p.priceType === priceType);
+        if (pricing) {
+          activityAmount = activityAmount.add(new Prisma.Decimal(pricing.price).mul(quantity));
+        }
+      }
+
+      // Créer la réservation pour cette activité
+      const reservation = await prisma.reservation.create({
+        data: {
+          groupId: groupId,
+          eventId: event.id,
+          activityId: activityId,
+          activityName: activity.name,
+          nom: data.nom,
+          prenom: data.prenom,
+          email: data.email,
+          telephone: data.telephone,
+          participants: participants,
+          amount: activityAmount,
+          paymentStatus: 'PENDING',
+        },
+      });
+
+      createdReservations.push(reservation.id);
     }
 
-    const mainActivity = event.activities.find((a) => a.id === mainActivityId);
-    const activityName = mainActivity ? mainActivity.name : event.activities[0]?.name || 'Activité';
-
-    // 7. Créer la réservation
-    const reservation = await prisma.reservation.create({
-      data: {
-        eventId: event.id,
-        activityId: mainActivityId || event.activities[0]?.id,
-        activityName: activityName,
-        nom: data.nom,
-        prenom: data.prenom,
-        email: data.email,
-        telephone: data.telephone,
-        participants: participantsByActivity[mainActivityId] || {},
-        amount: totalAmount,
-        paymentStatus: 'PENDING',
-      },
-    });
-
-    // 8. Retourner la réservation créée
+    // 8. Retourner le groupId et le montant total
     return new Response(
       JSON.stringify({
         success: true,
-        reservationId: reservation.id,
+        groupId: groupId,
+        reservationIds: createdReservations,
         amount: totalAmount.toString(),
-        message: 'Réservation créée avec succès',
+        message: `${createdReservations.length} réservation(s) créée(s) avec succès`,
       }),
       {
         status: 201,

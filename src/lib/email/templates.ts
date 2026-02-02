@@ -13,7 +13,8 @@ import 'dotenv/config';
 // ============================================================================
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || 'anjouexplore@gmail.com';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'no-reply@ratons.ovh';
+const APP_URL = process.env.APP_URL || 'http://localhost:4321';
 
 if (!RESEND_API_KEY) {
   console.warn('[Email] RESEND_API_KEY manquante - emails désactivés');
@@ -247,7 +248,7 @@ function paymentConfirmationTemplate(data: PaymentConfirmationData['reservation'
         <p>
           📞 06.83.92.45.03<br>
           📧 anjouexplore@gmail.com<br>
-          🌐 <a href="http://localhost:4321" style="color: #c4a571;">www.anjouexplore.com</a>
+          🌐 <a href="${APP_URL}" style="color: #c4a571;">www.anjouexplore.com</a>
         </p>
       </div>
     </div>

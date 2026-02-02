@@ -1,31 +1,40 @@
 ---
 /**
  * Page de retour après paiement SumUp
- * URL: /payment/return?reservationId=xxx
+ * URL: /payment/return?groupId=xxx  OU  /payment/return?reservationId=xxx
  */
 
 import Layout from '../../layouts/Layout.astro';
 import { prisma } from '../../lib/db/client';
 
-// Récupérer le reservationId depuis les query params
+// Récupérer groupId ou reservationId depuis les query params
 const url = new URL(Astro.request.url);
+const groupId = url.searchParams.get('groupId');
 const reservationId = url.searchParams.get('reservationId');
 
 let status: 'loading' | 'paid' | 'pending' | 'failed' | 'not-found' = 'loading';
-let reservation: any = null;
+let reservations: any[] = [];
 let event: any = null;
+let totalAmount = 0;
 
-if (reservationId) {
+if (groupId || reservationId) {
   try {
-    // Récupérer la réservation depuis la BDD
-    reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+    // Récupérer les réservations (soit par groupId, soit une seule)
+    reservations = await prisma.reservation.findMany({
+      where: groupId
+        ? { groupId }
+        : { id: reservationId },
       include: {
         event: {
           select: {
             name: true,
             slug: true,
             date: true,
+          },
+        },
+        activity: {
+          select: {
+            name: true,
           },
         },
         paymentTransactions: {
@@ -37,10 +46,18 @@ if (reservationId) {
       },
     });
 
-    if (reservation) {
-      event = reservation.event;
-      status = reservation.paymentStatus === 'PAID' ? 'paid' :
-               reservation.paymentStatus === 'FAILED' ? 'failed' : 'pending';
+    if (reservations.length > 0) {
+      event = reservations[0].event;
+
+      // Calculer le montant total
+      totalAmount = reservations.reduce((sum, r) => sum + Number(r.amount), 0);
+
+      // Déterminer le statut global (PAID si toutes payées, FAILED si au moins une failed, sinon PENDING)
+      const allPaid = reservations.every(r => r.paymentStatus === 'PAID');
+      const anyFailed = reservations.some(r => r.paymentStatus === 'FAILED');
+
+      status = allPaid ? 'paid' :
+               anyFailed ? 'failed' : 'pending';
     } else {
       status = 'not-found';
     }
@@ -49,6 +66,9 @@ if (reservationId) {
     status = 'not-found';
   }
 }
+
+// Référence pour check-status (utiliser groupId en priorité)
+const checkStatusParam = groupId ? `groupId=${groupId}` : `reservationId=${reservationId}`;
 
 // Formater les participants
 function formatParticipants(participants: any): string {
@@ -86,21 +106,23 @@ function formatAmount(amount: any): string {
       {/* ============================================ */}
       {/* PAIEMENT RÉUSSI */}
       {/* ============================================ */}
-      {status === 'paid' && reservation && (
+      {status === 'paid' && reservations.length > 0 && (
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header Success */}
           <div class="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-12 text-center">
             <div class="text-6xl mb-4">✓</div>
             <h1 class="text-3xl font-bold mb-2">Paiement réussi !</h1>
-            <p class="text-green-100 text-lg">Votre réservation est confirmée</p>
+            <p class="text-green-100 text-lg">
+              {reservations.length > 1 ? 'Vos réservations sont confirmées' : 'Votre réservation est confirmée'}
+            </p>
           </div>
 
           {/* Content */}
           <div class="p-8">
             <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
               <p class="text-green-800">
-                <strong>Merci {reservation.prenom} !</strong><br>
-                Un email de confirmation vient d'être envoyé à <strong>{reservation.email}</strong>
+                <strong>Merci {reservations[0].prenom} !</strong><br>
+                Un email de confirmation vient d'être envoyé à <strong>{reservations[0].email}</strong>
               </p>
             </div>
 
@@ -108,7 +130,7 @@ function formatAmount(amount: any): string {
             <div class="space-y-4 mb-8">
               <h2 class="text-xl font-semibold text-gray-900 mb-4">Détails de votre réservation</h2>
 
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="col-span-2 sm:col-span-1">
                   <div class="text-sm text-gray-500">Événement</div>
                   <div class="font-semibold">{event.name}</div>
@@ -118,25 +140,33 @@ function formatAmount(amount: any): string {
                   <div class="text-sm text-gray-500">Date</div>
                   <div class="font-semibold">{formatDate(new Date(event.date))}</div>
                 </div>
+              </div>
 
-                <div class="col-span-2 sm:col-span-1">
-                  <div class="text-sm text-gray-500">Activité</div>
-                  <div class="font-semibold">{reservation.activityName}</div>
-                </div>
+              {/* Liste des activités */}
+              <div class="space-y-3">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Activités réservées</h3>
+                {reservations.map((reservation) => (
+                  <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="font-semibold text-gray-900">
+                        {reservation.activity?.name || reservation.activityName}
+                      </div>
+                      <div class="font-bold text-[var(--color-anjou-gold)]">
+                        {formatAmount(reservation.amount)}
+                      </div>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                      {formatParticipants(reservation.participants)}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-                <div class="col-span-2 sm:col-span-1">
-                  <div class="text-sm text-gray-500">Participants</div>
-                  <div class="font-semibold">{formatParticipants(reservation.participants)}</div>
-                </div>
-
-                <div class="col-span-2 sm:col-span-1">
-                  <div class="text-sm text-gray-500">Référence</div>
-                  <div class="font-mono text-sm">{reservation.id.slice(0, 8).toUpperCase()}</div>
-                </div>
-
-                <div class="col-span-2 sm:col-span-1">
-                  <div class="text-sm text-gray-500">Montant payé</div>
-                  <div class="font-bold text-green-600 text-lg">{formatAmount(reservation.amount)}</div>
+              {/* Montant total */}
+              <div class="border-t border-gray-200 pt-4 mt-6">
+                <div class="flex justify-between items-center">
+                  <div class="text-lg font-semibold text-gray-900">Montant total payé</div>
+                  <div class="font-bold text-green-600 text-2xl">{formatAmount(totalAmount)}</div>
                 </div>
               </div>
             </div>
@@ -173,7 +203,7 @@ function formatAmount(amount: any): string {
       {/* ============================================ */}
       {/* PAIEMENT EN ATTENTE */}
       {/* ============================================ */}
-      {status === 'pending' && reservation && (
+      {status === 'pending' && reservations.length > 0 && (
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header Pending */}
           <div class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-12 text-center">
@@ -291,14 +321,14 @@ function formatAmount(amount: any): string {
   </main>
 
   {/* Script de vérification automatique du statut (fallback pour dev local) */}
-  {status === 'pending' && reservationId && (
-    <script is:inline define:vars={{ reservationId }}>
+  {status === 'pending' && (groupId || reservationId) && (
+    <script is:inline define:vars={{ checkStatusParam }}>
       // Vérifier automatiquement le statut au chargement
       async function checkPaymentStatus() {
         try {
           console.log('[Payment Return] Vérification automatique du statut...');
 
-          const response = await fetch(`/api/public/payments/check-status?reservationId=${reservationId}`);
+          const response = await fetch(`/api/public/payments/check-status?${checkStatusParam}`);
 
           if (!response.ok) {
             console.error('[Payment Return] Erreur lors de la vérification:', response.status);

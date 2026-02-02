@@ -208,14 +208,14 @@ async function handleSubmit(e: Event) {
     submitText.textContent = 'Initialisation du paiement...';
 
     try {
-      // Initialize SumUp payment
+      // Initialize SumUp payment (using groupId if multiple reservations)
       const paymentResponse = await fetch('/api/public/payments/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          reservationId: data.reservationId,
+          groupId: data.groupId, // Nouveau : un checkout pour tout le groupe
         }),
       });
 

@@ -39,8 +39,8 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // 3. Récupérer la transaction depuis la BDD
-    const transaction = await prisma.paymentTransaction.findFirst({
+    // 3. Récupérer TOUTES les transactions avec ce checkoutId (groupe possible)
+    const transactions = await prisma.paymentTransaction.findMany({
       where: { checkoutId },
       include: {
         reservation: {
@@ -52,26 +52,32 @@ export const POST: APIRoute = async ({ request }) => {
                 date: true,
               },
             },
+            activity: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (!transaction) {
-      console.error('[Webhook SumUp] Transaction introuvable pour checkoutId:', checkoutId);
+    if (transactions.length === 0) {
+      console.error('[Webhook SumUp] Aucune transaction trouvée pour checkoutId:', checkoutId);
       return new Response(
         JSON.stringify({ error: 'Transaction introuvable' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log(`[Webhook SumUp] ${transactions.length} transaction(s) trouvée(s)`);
+
     // 4. Vérifier le statut réel via l'API SumUp (sécurité)
     const checkout = await getCheckout(checkoutId);
     console.log('[Webhook SumUp] Statut checkout:', checkout.status);
 
-    // 5. Mettre à jour la transaction selon le statut
+    // 5. Préparer les données de mise à jour selon le statut
     let updateData: any = {
-      status: checkout.status,
       sumupResponse: checkout as any,
     };
 
@@ -88,16 +94,20 @@ export const POST: APIRoute = async ({ request }) => {
       updateData.expiredAt = new Date();
     }
 
-    // Mettre à jour la transaction
-    await prisma.paymentTransaction.update({
-      where: { id: transaction.id },
+    // Mettre à jour TOUTES les transactions avec ce checkoutId
+    await prisma.paymentTransaction.updateMany({
+      where: { checkoutId },
       data: updateData,
     });
 
-    // 6. Si paiement réussi, mettre à jour la réservation
+    console.log(`[Webhook SumUp] ${transactions.length} transaction(s) mise(s) à jour: ${updateData.status}`);
+
+    // 6. Si paiement réussi, mettre à jour TOUTES les réservations
     if (checkout.status === 'PAID') {
-      await prisma.reservation.update({
-        where: { id: transaction.reservationId },
+      const reservationIds = transactions.map(t => t.reservation.id);
+
+      await prisma.reservation.updateMany({
+        where: { id: { in: reservationIds } },
         data: {
           paymentStatus: 'PAID',
           paidAt: new Date(),
@@ -106,19 +116,23 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
 
-      // 7. Envoyer email de confirmation
+      console.log(`[Webhook SumUp] ${reservationIds.length} réservation(s) mise(s) à jour: PAID`);
+
+      // 7. Envoyer UN email de confirmation avec TOUTES les activités
       try {
+        const firstReservation = transactions[0].reservation;
+
         await sendPaymentConfirmationEmail({
-          to: transaction.reservation.email,
+          to: firstReservation.email,
           reservation: {
-            id: transaction.reservation.id,
-            nom: transaction.reservation.nom,
-            prenom: transaction.reservation.prenom,
-            eventName: transaction.reservation.event.name,
-            eventDate: transaction.reservation.event.date,
-            activityName: transaction.reservation.activityName,
-            participants: transaction.reservation.participants as any,
-            amount: Number(transaction.reservation.amount),
+            id: firstReservation.id,
+            nom: firstReservation.nom,
+            prenom: firstReservation.prenom,
+            eventName: firstReservation.event.name,
+            eventDate: firstReservation.event.date,
+            activityName: transactions.map(t => t.reservation.activity?.name || t.reservation.activityName).join(', '),
+            participants: firstReservation.participants as any,
+            amount: transactions.reduce((sum, t) => sum + Number(t.reservation.amount), 0),
           },
         });
         console.log('[Webhook SumUp] Email de confirmation envoyé');

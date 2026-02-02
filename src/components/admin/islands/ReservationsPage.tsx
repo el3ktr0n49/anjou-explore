@@ -468,8 +468,9 @@ export default function ReservationsPage() {
                           </button>
                         )}
 
-                        {/* Bouton Rembourser */}
-                        {reservation.paymentStatus === 'PAID' && (
+                        {/* Bouton Rembourser - Masqué pour Phase 1 (fonction non implémentée) */}
+                        {/* TODO: Réactiver quand la gestion des remboursements sera implémentée (Phase F+) */}
+                        {/* {reservation.paymentStatus === 'PAID' && (
                           <button
                             onClick={() => handleRefund(reservation.id)}
                             class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-xs font-medium transition"
@@ -477,7 +478,7 @@ export default function ReservationsPage() {
                           >
                             ↩ Rembourser
                           </button>
-                        )}
+                        )} */}
 
                         {/* Bouton Archiver/Restaurer */}
                         {!reservation.archived ? (

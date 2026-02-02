@@ -1,12 +1,12 @@
 /**
- * GET /api/public/payments/check-status?reservationId=xxx
+ * GET /api/public/payments/check-status?groupId=xxx  OU  ?reservationId=xxx
  *
  * Endpoint de fallback pour vérifier le statut d'un paiement
  * Utilisé en développement local quand le webhook ne fonctionne pas
  *
  * Ce endpoint :
- * 1. Récupère la réservation
- * 2. Trouve la dernière transaction PaymentTransaction
+ * 1. Récupère les réservations (par groupId ou reservationId)
+ * 2. Trouve les transactions PaymentTransaction en cours
  * 3. Vérifie le statut via l'API SumUp
  * 4. Met à jour la BDD si nécessaire
  * 5. Retourne le statut actuel
@@ -23,7 +23,10 @@ import { sendPaymentConfirmationEmail } from '../../../../lib/email/templates';
 // ============================================================================
 
 const checkStatusSchema = z.object({
-  reservationId: z.string().uuid(),
+  groupId: z.string().uuid().optional(),
+  reservationId: z.string().uuid().optional(),
+}).refine(data => data.groupId || data.reservationId, {
+  message: 'groupId ou reservationId requis',
 });
 
 // ============================================================================
@@ -33,18 +36,26 @@ const checkStatusSchema = z.object({
 export const GET: APIRoute = async ({ url }) => {
   try {
     // 1. Valider les paramètres
+    const groupId = url.searchParams.get('groupId') || undefined;
     const reservationId = url.searchParams.get('reservationId') || undefined;
-    const { reservationId: validatedId } = checkStatusSchema.parse({ reservationId });
+    const validated = checkStatusSchema.parse({ groupId, reservationId });
 
-    // 2. Récupérer la réservation avec la dernière transaction
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: validatedId },
+    // 2. Récupérer les réservations avec les dernières transactions
+    const reservations = await prisma.reservation.findMany({
+      where: validated.groupId
+        ? { groupId: validated.groupId }
+        : { id: validated.reservationId },
       include: {
         event: {
           select: {
             name: true,
             slug: true,
             date: true,
+          },
+        },
+        activity: {
+          select: {
+            name: true,
           },
         },
         paymentTransactions: {
@@ -61,54 +72,53 @@ export const GET: APIRoute = async ({ url }) => {
       },
     });
 
-    if (!reservation) {
+    if (reservations.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Réservation introuvable' }),
+        JSON.stringify({ error: 'Réservation(s) introuvable(s)' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // 3. Si déjà payé, retourner le statut
-    if (reservation.paymentStatus === 'PAID') {
+    // 3. Si toutes les réservations sont déjà payées, retourner le statut
+    const allPaid = reservations.every(r => r.paymentStatus === 'PAID');
+
+    if (allPaid) {
       return new Response(
         JSON.stringify({
           status: 'PAID',
           message: 'Paiement confirmé',
-          reservation: {
-            id: reservation.id,
-            paymentStatus: reservation.paymentStatus,
-            paidAt: reservation.paidAt,
-          },
+          reservationsCount: reservations.length,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // 4. Si pas de transaction en cours, retourner le statut actuel
-    if (reservation.paymentTransactions.length === 0) {
+    // 4. Récupérer toutes les transactions en cours
+    const activeTransactions = reservations
+      .flatMap(r => r.paymentTransactions)
+      .filter(t => t !== null);
+
+    if (activeTransactions.length === 0) {
       return new Response(
         JSON.stringify({
-          status: reservation.paymentStatus,
+          status: 'PENDING',
           message: 'Aucune transaction en cours',
-          reservation: {
-            id: reservation.id,
-            paymentStatus: reservation.paymentStatus,
-          },
+          reservationsCount: reservations.length,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const transaction = reservation.paymentTransactions[0];
+    // 5. Vérifier le statut via l'API SumUp (utiliser la première transaction)
+    const transaction = activeTransactions[0];
 
-    // 5. Vérifier le statut via l'API SumUp
     console.log('[Check Status] Vérification du checkout SumUp:', transaction.checkoutId);
 
     const checkout = await getCheckout(transaction.checkoutId);
 
     console.log('[Check Status] Statut SumUp:', checkout.status);
 
-    // 6. Mettre à jour la transaction selon le statut
+    // 6. Mettre à jour toutes les transactions avec le même checkoutId
     let needsUpdate = false;
     let updateData: any = {
       sumupResponse: checkout as any,
@@ -132,18 +142,20 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     if (needsUpdate) {
-      // Mettre à jour la transaction
-      await prisma.paymentTransaction.update({
-        where: { id: transaction.id },
+      // Mettre à jour toutes les transactions avec ce checkoutId
+      await prisma.paymentTransaction.updateMany({
+        where: { checkoutId: transaction.checkoutId },
         data: updateData,
       });
 
-      console.log('[Check Status] Transaction mise à jour:', updateData.status);
+      console.log('[Check Status] Transactions mises à jour:', updateData.status);
 
-      // 7. Si paiement réussi, mettre à jour la réservation
+      // 7. Si paiement réussi, mettre à jour toutes les réservations
       if (checkout.status === 'PAID') {
-        await prisma.reservation.update({
-          where: { id: reservation.id },
+        const reservationIds = reservations.map(r => r.id);
+
+        await prisma.reservation.updateMany({
+          where: { id: { in: reservationIds } },
           data: {
             paymentStatus: 'PAID',
             paidAt: new Date(),
@@ -152,21 +164,25 @@ export const GET: APIRoute = async ({ url }) => {
           },
         });
 
-        console.log('[Check Status] Réservation mise à jour: PAID');
+        console.log(`[Check Status] ${reservations.length} réservation(s) mise(s) à jour: PAID`);
 
-        // 8. Envoyer email de confirmation
+        // 8. Envoyer UN seul email de confirmation avec toutes les activités
+        const firstReservation = reservations[0];
+
         try {
+          // Pour l'instant, on envoie un email simple avec les infos de la première réservation
+          // TODO: Améliorer le template email pour lister toutes les activités
           await sendPaymentConfirmationEmail({
-            to: reservation.email,
+            to: firstReservation.email,
             reservation: {
-              id: reservation.id,
-              nom: reservation.nom,
-              prenom: reservation.prenom,
-              eventName: reservation.event.name,
-              eventDate: reservation.event.date,
-              activityName: reservation.activityName,
-              participants: reservation.participants as any,
-              amount: Number(reservation.amount),
+              id: firstReservation.id,
+              nom: firstReservation.nom,
+              prenom: firstReservation.prenom,
+              eventName: firstReservation.event.name,
+              eventDate: firstReservation.event.date,
+              activityName: reservations.map(r => r.activity?.name || r.activityName).join(', '),
+              participants: firstReservation.participants as any,
+              amount: reservations.reduce((sum, r) => sum + Number(r.amount), 0),
             },
           });
           console.log('[Check Status] Email de confirmation envoyé');
@@ -180,11 +196,7 @@ export const GET: APIRoute = async ({ url }) => {
             status: 'PAID',
             message: 'Paiement confirmé',
             updated: true,
-            reservation: {
-              id: reservation.id,
-              paymentStatus: 'PAID',
-              paidAt: new Date(),
-            },
+            reservationsCount: reservations.length,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
@@ -197,10 +209,7 @@ export const GET: APIRoute = async ({ url }) => {
         status: checkout.status,
         message: `Statut : ${checkout.status}`,
         updated: needsUpdate,
-        reservation: {
-          id: reservation.id,
-          paymentStatus: reservation.paymentStatus,
-        },
+        reservationsCount: reservations.length,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

@@ -122,6 +122,11 @@ enum PaymentStatus {
 
 model Reservation {
   id              String        @id @default(uuid())
+
+  // Groupe de réservations (pour multi-activités)
+  // Plusieurs réservations peuvent partager le même groupId si réservées ensemble
+  groupId         String?       @map("group_id")
+
   eventId         String        @map("event_id")
   event           Event         @relation(fields: [eventId], references: [id])
 
@@ -168,6 +173,7 @@ model Reservation {
   @@index([email])
   @@index([paymentStatus])
   @@index([archived])
+  @@index([groupId])
   @@map("reservations")
 }
 
