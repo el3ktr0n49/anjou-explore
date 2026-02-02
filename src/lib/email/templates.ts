@@ -153,6 +153,7 @@ function paymentConfirmationTemplate(
     .info-row {
       display: flex;
       justify-content: space-between;
+      gap: 16px;
       padding: 8px 0;
       border-bottom: 1px solid #e5e7eb;
     }
@@ -162,9 +163,11 @@ function paymentConfirmationTemplate(
     .info-label {
       font-weight: 600;
       color: #4a3b2f;
+      flex-shrink: 0;
     }
     .info-value {
       color: #666;
+      text-align: right;
     }
     .amount {
       background: linear-gradient(135deg, #c4a571 0%, #6b7456 100%);
@@ -230,17 +233,21 @@ function paymentConfirmationTemplate(
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 16px;
       margin-bottom: 8px;
     }
     .activity-name {
       font-weight: 600;
       color: #333;
       font-size: 16px;
+      flex: 1;
     }
     .activity-amount {
       font-weight: 700;
       color: #c4a571;
       font-size: 16px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .activity-participants {
       color: #666;
