@@ -170,8 +170,6 @@ export const GET: APIRoute = async ({ url }) => {
         const firstReservation = reservations[0];
 
         try {
-          // Pour l'instant, on envoie un email simple avec les infos de la première réservation
-          // TODO: Améliorer le template email pour lister toutes les activités
           await sendPaymentConfirmationEmail({
             to: firstReservation.email,
             reservation: {
@@ -184,6 +182,12 @@ export const GET: APIRoute = async ({ url }) => {
               participants: firstReservation.participants as any,
               amount: reservations.reduce((sum, r) => sum + Number(r.amount), 0),
             },
+            // Liste détaillée des activités pour affichage email
+            activities: reservations.map(r => ({
+              name: r.activity?.name || r.activityName,
+              participants: r.participants as Record<string, number>,
+              amount: Number(r.amount),
+            })),
           });
           console.log('[Check Status] Email de confirmation envoyé');
         } catch (emailError) {

@@ -134,6 +134,12 @@ export const POST: APIRoute = async ({ request }) => {
             participants: firstReservation.participants as any,
             amount: transactions.reduce((sum, t) => sum + Number(t.reservation.amount), 0),
           },
+          // Liste détaillée des activités pour affichage email
+          activities: transactions.map(t => ({
+            name: t.reservation.activity?.name || t.reservation.activityName,
+            participants: t.reservation.participants as Record<string, number>,
+            amount: Number(t.reservation.amount),
+          })),
         });
         console.log('[Webhook SumUp] Email de confirmation envoyé');
       } catch (emailError) {

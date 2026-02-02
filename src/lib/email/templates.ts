@@ -38,6 +38,12 @@ export interface PaymentConfirmationData {
     participants: Record<string, number>;
     amount: number;
   };
+  // Liste des activités individuelles pour affichage détaillé (multi-activités)
+  activities?: Array<{
+    name: string;
+    participants: Record<string, number>;
+    amount: number;
+  }>;
 }
 
 // ============================================================================
@@ -85,7 +91,10 @@ function formatParticipants(participants: Record<string, number>): string {
 /**
  * Template email de confirmation de paiement
  */
-function paymentConfirmationTemplate(data: PaymentConfirmationData['reservation']): string {
+function paymentConfirmationTemplate(
+  data: PaymentConfirmationData['reservation'],
+  activities?: PaymentConfirmationData['activities']
+): string {
   return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -196,6 +205,47 @@ function paymentConfirmationTemplate(data: PaymentConfirmationData['reservation'
       padding-top: 20px;
       border-top: 1px solid #e5e7eb;
     }
+    .activities-section {
+      margin: 20px 0;
+    }
+    .activities-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4a3b2f;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .activity-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .activity-card:last-child {
+      margin-bottom: 0;
+    }
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .activity-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 16px;
+    }
+    .activity-amount {
+      font-weight: 700;
+      color: #c4a571;
+      font-size: 16px;
+    }
+    .activity-participants {
+      color: #666;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -221,18 +271,36 @@ function paymentConfirmationTemplate(data: PaymentConfirmationData['reservation'
           <span class="info-value">${formatDate(data.eventDate)}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Activité</span>
-          <span class="info-value">${data.activityName}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Participants</span>
-          <span class="info-value">${formatParticipants(data.participants)}</span>
-        </div>
-        <div class="info-row">
           <span class="info-label">Référence</span>
           <span class="info-value">#${data.id.slice(0, 8).toUpperCase()}</span>
         </div>
       </div>
+
+      ${activities && activities.length > 0 ? `
+        <div class="activities-section">
+          <div class="activities-title">Activités réservées</div>
+          ${activities.map(activity => `
+            <div class="activity-card">
+              <div class="activity-header">
+                <div class="activity-name">${activity.name}</div>
+                <div class="activity-amount">${formatAmount(activity.amount)}</div>
+              </div>
+              <div class="activity-participants">${formatParticipants(activity.participants)}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">Activité</span>
+            <span class="info-value">${data.activityName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Participants</span>
+            <span class="info-value">${formatParticipants(data.participants)}</span>
+          </div>
+        </div>
+      `}
 
       <div class="amount">
         <div class="label">Montant payé</div>
@@ -286,7 +354,7 @@ export async function sendPaymentConfirmationEmail(
       from: EMAIL_FROM,
       to: data.to,
       subject: `Confirmation de réservation - ${data.reservation.eventName}`,
-      html: paymentConfirmationTemplate(data.reservation),
+      html: paymentConfirmationTemplate(data.reservation, data.activities),
     });
 
     if (error) {
