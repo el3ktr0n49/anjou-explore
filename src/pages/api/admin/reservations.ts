@@ -80,15 +80,22 @@ export const GET: APIRoute = async (context) => {
     }
 
     // 4. Récupérer les réservations avec tri par date (plus récentes en premier)
-    // + inclure les infos de l'événement associé + transactions de paiement
+    // + inclure les infos de l'événement associé + transactions de paiement + activité
     const reservations = await prisma.reservation.findMany({
       where,
       include: {
         event: {
           select: {
+            id: true,
             name: true,
             slug: true,
             date: true,
+          },
+        },
+        activity: {
+          select: {
+            id: true,
+            name: true,
           },
         },
         paymentTransactions: {

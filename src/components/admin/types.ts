@@ -73,6 +73,7 @@ export interface ReservationEvent {
 
 export interface ReservationFull {
   id: string;
+  groupId?: string | null;
   eventId: string;
   event: ReservationEvent;
   nom: string;
