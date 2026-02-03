@@ -1575,6 +1575,94 @@ EMAIL_FROM="anjouexplore@gmail.com"
 
 ---
 
+#### Améliorations Post-Phase F : Groupement Réservations Multi-Activités (✅ Complété - 3 février 2026)
+
+**Contexte** : Après la Phase F, un bug a été découvert lors du test des réservations multi-activités. Seule une réservation était créée au lieu d'une par activité, causant une structure de données incorrecte. De plus, l'interface admin affichait plusieurs lignes dupliquées pour une même personne ayant réservé plusieurs activités, créant de la confusion.
+
+**Solution Implémentée** :
+
+1. **Refactorisation Complète du Système de Réservation** :
+   - Ajout du champ `groupId` (UUID) dans le modèle `Reservation` (Prisma)
+   - Modification de l'API `/api/public/reservations/create` : création d'une ligne par activité avec `groupId` partagé
+   - Une réservation multi-activités génère maintenant N lignes en base avec le même `groupId`
+   - Index ajouté sur `groupId` pour performances
+
+2. **Adaptation Paiements SumUp** :
+   - `/api/public/payments/checkout` : Accepte `groupId` OU `reservationId`
+   - Récupère toutes les réservations du groupe pour calculer le montant total
+   - Crée une `PaymentTransaction` pour chaque réservation du groupe (même `checkoutId`)
+   - `/api/webhooks/sumup` : Met à jour toutes les transactions avec le même `checkoutId`
+   - `/api/public/payments/check-status` : Vérifie et met à jour toutes les réservations du groupe
+
+3. **Amélioration Email de Confirmation** :
+   - Ajout du paramètre `activities` dans `sendPaymentConfirmationEmail()`
+   - Template HTML affiche maintenant chaque activité séparément avec ses participants et montant
+   - Design avec cards individuelles pour chaque activité
+   - Montant total affiché en footer
+   - Espacement corrigé (padding au lieu de gap pour compatibilité email clients)
+
+4. **Page de Retour Paiement** :
+   - Accepte `groupId` en plus de `reservationId`
+   - Affiche toutes les activités réservées avec détails
+   - Script auto-check fonctionne avec les deux paramètres
+
+5. **Groupement Interface Admin** (Principal apport UX) :
+   - Création du type `GroupedReservation` pour agréger les données
+   - Fonction `groupReservations()` : groupe par `groupId`, calcule montants totaux et statuts consolidés
+   - **Affichage simplifié** : Une seule ligne par personne dans le tableau
+     - Date, Événement, Nom, Email : affichés une seule fois
+     - Colonne "Activités" : liste toutes les activités (ex: • rando papilles • le défi)
+     - Colonne "Participants" : liste les participants par activité
+     - Colonne "Montant Total" : somme de toutes les activités
+   - **Actions groupées** : Les boutons (Payé, Archiver, Supprimer) affectent toutes les réservations du groupe
+   - **Statut consolidé** : PAID si toutes payées, FAILED si au moins une échouée, sinon premier statut
+   - Fix filtre événement : Ajout de `event.id` et `activity` dans l'API
+
+**Fichiers modifiés** :
+```
+prisma/schema.prisma                           # Ajout groupId + index
+src/pages/api/public/reservations/create.ts    # Création multi-lignes avec groupId
+src/pages/api/public/payments/checkout.ts      # Support groupId
+src/pages/api/webhooks/sumup.ts                # Gestion groupes
+src/pages/api/public/payments/check-status.ts  # Gestion groupes
+src/pages/payment/return.astro                 # Affichage groupes
+src/lib/email/templates.ts                     # Template multi-activités
+src/components/admin/types.ts                  # Ajout groupId au type ReservationFull
+src/components/admin/islands/ReservationsPage.tsx  # Logique groupement + affichage
+src/pages/api/admin/reservations.ts            # Ajout event.id et activity
+```
+
+**Exemple Visuel** :
+
+Avant (confus) :
+```
+| Date       | Nom           | Email          | Activité         | Montant |
+|------------|---------------|----------------|------------------|---------|
+| 03/02/2026 | José Dupont   | jose@test.com  | rando papilles   | 90€     |
+| 03/02/2026 | José Dupont   | jose@test.com  | le défi          | 100€    |
+```
+
+Après (clair) :
+```
+| Date       | Nom           | Email          | Activités           | Montant Total |
+|------------|---------------|----------------|---------------------|---------------|
+| 03/02/2026 | José Dupont   | jose@test.com  | • rando papilles    | 190€          |
+|            |               |                | • le défi           |               |
+```
+
+**Tests réalisés** :
+- ✅ Réservation multi-activités crée N lignes en BDD avec même `groupId`
+- ✅ Paiement SumUp fonctionne pour groupes (montant total correct)
+- ✅ Webhook met à jour toutes les réservations du groupe
+- ✅ Email affiche toutes les activités séparément
+- ✅ Interface admin affiche une seule ligne par personne
+- ✅ Actions admin (Payé, Archiver, Supprimer) affectent tout le groupe
+- ✅ Filtre événement fonctionne sans erreur 400
+
+**Dernier commit** : `feat(admin): groupement réservations multi-activités par groupId`
+
+---
+
 ### 📋 À faire
 
 #### Phase F+ : Améliorations Paiements (Optionnel)
