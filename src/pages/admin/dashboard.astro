@@ -349,40 +349,7 @@ import Layout from '../../layouts/Layout.astro';
 </style>
 
 <script>
-  // Vérifier l'authentification au chargement
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/auth/verify', {
-        credentials: 'include',
-      });
-      const data = await response.json();
-
-      if (!data.authenticated) {
-        // Non authentifié → Rediriger vers login
-        window.location.href = '/admin/login';
-        return;
-      }
-
-      // Vérifier si changement de mot de passe requis
-      if (data.admin?.mustChangePassword) {
-        console.log('🔒 Changement de mot de passe requis, redirection...');
-        window.location.href = '/admin/change-password';
-        return;
-      }
-
-      // Afficher le nom de l'admin
-      const adminNameEl = document.getElementById('admin-name');
-      if (adminNameEl) {
-        adminNameEl.textContent = data.admin.name;
-      }
-
-      // Charger les statistiques une fois authentifié
-      await loadStats();
-    } catch (error) {
-      console.error('Erreur de vérification:', error);
-      window.location.href = '/admin/login';
-    }
-  }
+  import { checkAuthAndRedirect, setupLogoutButton, type AdminData } from '../../scripts/admin/auth-guard';
 
   // Charger les statistiques du dashboard
   async function loadStats() {
@@ -462,19 +429,18 @@ import Layout from '../../layouts/Layout.astro';
     }
   }
 
-  // Gérer la déconnexion
-  const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn?.addEventListener('click', async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/admin/login';
-    } catch (error) {
-      console.error('Erreur de déconnexion:', error);
-      // Forcer la redirection même en cas d'erreur
-      window.location.href = '/admin/login';
+  // Vérifier l'auth au chargement avec callback pour afficher nom et stats
+  checkAuthAndRedirect(async (adminData: AdminData) => {
+    // Afficher le nom de l'admin
+    const adminNameEl = document.getElementById('admin-name');
+    if (adminNameEl) {
+      adminNameEl.textContent = adminData.name;
     }
+
+    // Charger les statistiques
+    await loadStats();
   });
 
-  // Vérifier l'auth au chargement
-  checkAuth();
+  // Configurer le bouton de déconnexion
+  setupLogoutButton();
 </script>

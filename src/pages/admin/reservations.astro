@@ -243,36 +243,11 @@ import ReservationsPage from '../../components/admin/islands/ReservationsPage';
 </style>
 
 <script>
-  // Vérifier l'authentification et le changement de mot de passe au chargement
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/auth/verify', { credentials: 'include' });
-      const data = await response.json();
-
-      if (!data.authenticated) {
-        window.location.href = '/admin/login';
-        return;
-      }
-
-      if (data.admin?.mustChangePassword) {
-        window.location.href = '/admin/change-password';
-        return;
-      }
-    } catch (error) {
-      console.error('Erreur de vérification:', error);
-      window.location.href = '/admin/login';
-    }
-  }
-
-  // Simple logout handler
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/admin/login';
-    });
-  }
+  import { checkAuthAndRedirect, setupLogoutButton } from '../../scripts/admin/auth-guard';
 
   // Vérifier l'auth au chargement
-  checkAuth();
+  checkAuthAndRedirect();
+
+  // Configurer le bouton de déconnexion
+  setupLogoutButton();
 </script>
