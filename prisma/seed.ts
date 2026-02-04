@@ -8,6 +8,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { generateSecret, generate, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
+import bcrypt from 'bcryptjs';
 
 const connectionString = `${process.env.DATABASE_URL}`
 
@@ -24,7 +25,7 @@ async function main() {
   console.log('👤 Création des administrateurs...');
 
   const adminNames = ['José', 'Fabien', 'Benoît', 'Adrien'];
-  const admins: Array<{ name: string; secret: string; qrCode: string }> = [];
+  const admins: Array<{ name: string; secret: string; qrCode: string; password: string }> = [];
 
   for (const name of adminNames) {
     // Générer un secret unique pour Google Authenticator
@@ -42,22 +43,40 @@ async function main() {
     // Générer le QR Code en base64
     const qrCodeDataURL = await QRCode.toDataURL(otpauth);
 
+    // Générer un mot de passe par défaut
+    const defaultPassword = `AnjouExplore2026_${name}`;
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
     // Créer ou mettre à jour l'admin
     await prisma.admin.upsert({
       where: { name },
       update: {
         secret2FA: secret,
+        password: hashedPassword,
+        mustChangePassword: true,
         isActive: true,
       },
       create: {
         name,
         secret2FA: secret,
+        password: hashedPassword,
+        mustChangePassword: true,
         isActive: true,
       },
     });
 
-    admins.push({ name, secret, qrCode: qrCodeDataURL });
-    console.log(`  ✓ ${name} créé avec secret 2FA`);
+    admins.push({ name, secret, qrCode: qrCodeDataURL, password: defaultPassword });
+    console.log(`  ✓ ${name} créé avec secret 2FA et mot de passe par défaut`);
+  }
+
+  console.log('\n🔐 Mots de passe par défaut:\n');
+  console.log('IMPORTANT : Ces mots de passe doivent être changés au premier login !\n');
+  console.log('═'.repeat(70));
+
+  for (const admin of admins) {
+    console.log(`\n${admin.name}:`);
+    console.log(`  Mot de passe : ${admin.password}`);
+    console.log('─'.repeat(70));
   }
 
   console.log('\n📱 QR Codes pour Google Authenticator:\n');

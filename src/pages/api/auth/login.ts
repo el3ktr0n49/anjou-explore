@@ -1,11 +1,11 @@
 /**
  * POST /api/auth/login
  *
- * Authentification admin avec mot de passe partagé + 2FA individuel
+ * Authentification admin avec mot de passe individuel + 2FA
  *
  * Body:
  * {
- *   password: string,      // Mot de passe partagé
+ *   password: string,      // Mot de passe individuel de l'admin
  *   adminName: string,     // "José", "Fabien", "Benoît", "Adrien"
  *   token2FA: string       // Code 6 chiffres Google Authenticator
  * }
@@ -13,7 +13,7 @@
  * Response success (200):
  * {
  *   success: true,
- *   admin: { id, name }
+ *   admin: { id, name, mustChangePassword }
  * }
  * + Cookie httpOnly avec JWT
  *
@@ -28,8 +28,6 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../../../lib/db/client';
 import { verify2FAToken } from '../../../lib/auth/2fa';
 import { generateToken, createAuthCookie } from '../../../lib/auth/jwt';
-
-const ADMIN_SHARED_PASSWORD = process.env.ADMIN_SHARED_PASSWORD || 'dev_password_change_in_prod';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -47,29 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // 3. Vérifier le mot de passe partagé
-    // Note: En dev, le mot de passe n'est pas hashé pour faciliter les tests
-    // En production, utiliser bcrypt.hash() pour générer le hash
-    let passwordValid = false;
-
-    if (process.env.NODE_ENV === 'production') {
-      // En production, comparer avec hash bcrypt
-      passwordValid = await bcrypt.compare(password, ADMIN_SHARED_PASSWORD);
-    } else {
-      // En dev, comparaison simple
-      passwordValid = password === ADMIN_SHARED_PASSWORD;
-    }
-
-    if (!passwordValid) {
-      return new Response(
-        JSON.stringify({
-          error: 'Mot de passe incorrect',
-        }),
-        { status: 401 }
-      );
-    }
-
-    // 4. Récupérer l'admin depuis la BDD
+    // 3. Récupérer l'admin depuis la BDD
     const admin = await prisma.admin.findUnique({
       where: { name: adminName },
     });
@@ -78,6 +54,19 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(
         JSON.stringify({
           error: 'Administrateur non trouvé ou désactivé',
+        }),
+        { status: 401 }
+      );
+    }
+
+    // 4. Vérifier le mot de passe individuel de l'admin
+    // Le mot de passe est toujours hashé avec bcrypt (même en dev)
+    const passwordValid = await bcrypt.compare(password, admin.password);
+
+    if (!passwordValid) {
+      return new Response(
+        JSON.stringify({
+          error: 'Mot de passe incorrect',
         }),
         { status: 401 }
       );
@@ -122,6 +111,7 @@ export const POST: APIRoute = async ({ request }) => {
         admin: {
           id: admin.id,
           name: admin.name,
+          mustChangePassword: admin.mustChangePassword,
         },
       }),
       {

@@ -138,6 +138,9 @@ bun run db:migrate                # Créer/appliquer migrations (prod)
 bun run db:studio                 # Ouvrir Prisma Studio (http://localhost:5555)
 bun run db:seed                   # Initialiser la DB avec données de test
 bun run db:reset                  # ⚠️ Réinitialiser la DB (supprime tout)
+
+# Admin Management
+bun run admin:reset-password <adminName>   # Réinitialiser le mot de passe d'un admin
 ```
 
 ## Backend Architecture
@@ -152,35 +155,64 @@ bun run db:reset                  # ⚠️ Réinitialiser la DB (supprime tout)
 
 ### Authentication
 
-**Système d'authentification en 3 couches :**
+**Système d'authentification sécurisé en 3 couches :**
 1. **URL secrète** : `/admin-<code-secret>` (non indexable, défini dans ADMIN_URL_SECRET)
-2. **Mot de passe partagé** : Un seul mot de passe pour les 4 admins (ADMIN_SHARED_PASSWORD)
+2. **Mot de passe individuel** : Chaque admin a son propre mot de passe (hash bcrypt)
 3. **2FA individuel** : Chaque admin a son Google Authenticator unique
 
 **Workflow de connexion :**
 ```typescript
 1. Accéder à l'URL secrète (ex: /admin/login)
 2. Entrer identifiant (input texte pour sécurité, pas dropdown)
-3. Entrer le mot de passe
+3. Entrer le mot de passe individuel
 4. Entrer le code 2FA à 6 chiffres
-5. → Session JWT valide 24h (cookie httpOnly + SameSite=Strict)
+5. → Si premier login : Redirection forcée vers /admin/change-password
+6. → Session JWT valide 24h (cookie httpOnly + SameSite=Strict)
 ```
 
 **Admins configurés (via seed.ts)** :
-- José (secret 2FA unique)
-- Fabien (secret 2FA unique)
-- Benoît (secret 2FA unique)
-- Adrien (secret 2FA unique)
+- José (mot de passe par défaut : `AnjouExplore2026_José`, secret 2FA unique)
+- Fabien (mot de passe par défaut : `AnjouExplore2026_Fabien`, secret 2FA unique)
+- Benoît (mot de passe par défaut : `AnjouExplore2026_Benoît`, secret 2FA unique)
+- Adrien (mot de passe par défaut : `AnjouExplore2026_Adrien`, secret 2FA unique)
+
+**Gestion des mots de passe** :
+- **Premier login** : L'admin doit changer son mot de passe par défaut
+- **Changement de mot de passe** : Page `/admin/change-password`
+- **Réinitialisation** : Script CLI `bun run admin:reset-password <adminName>`
+  - Génère un mot de passe temporaire aléatoire et sécurisé
+  - Force le changement au prochain login
+  - **Nécessite accès au serveur** (SSH ou kubectl pour Kubernetes)
+
+**Politique de mot de passe** :
+- Minimum 12 caractères
+- Au moins 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial (@$!%*?&)
+- Hash bcrypt avec salt (10 rounds)
 
 **Mode développement vs Production** :
 - **2FA en développement** : Peut être désactivé via `ENABLE_2FA="false"` dans .env
 - **2FA en production** : TOUJOURS activé (override de ENABLE_2FA si NODE_ENV=production)
-- **Mot de passe** : Hash bcrypt en production, plain text comparaison en dev
+- **Mot de passe** : Hash bcrypt TOUJOURS (même en dev)
 
 **Implémentation** :
 ```typescript
 // src/pages/api/auth/login.ts
 const is2FAEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_2FA === 'true';
+
+// Vérification mot de passe individuel
+const passwordValid = await bcrypt.compare(password, admin.password);
+```
+
+**Réinitialisation en production (Kubernetes)** :
+```bash
+# 1. Se connecter au pod
+kubectl exec -it <pod-name> -- /bin/sh
+
+# 2. Exécuter le script de réinitialisation
+bun run admin:reset-password José
+
+# 3. Noter le mot de passe temporaire affiché
+# 4. Communiquer le mot de passe à l'admin de manière sécurisée
 ```
 
 ### Base de Données
@@ -191,8 +223,11 @@ const is2FAEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE
 // Administrateurs
 model Admin {
   id: string
-  name: string           // "José", "Fabien", "Benoît", "Adrien"
-  secret2FA: string      // Secret Google Authenticator
+  name: string                // "José", "Fabien", "Benoît", "Adrien"
+  secret2FA: string           // Secret Google Authenticator
+  password: string            // Hash bcrypt du mot de passe individuel
+  mustChangePassword: boolean // Forcer changement au premier login (défaut: true)
+  passwordChangedAt: DateTime?// Date du dernier changement
   isActive: boolean
 }
 
@@ -463,13 +498,27 @@ Ce fichier est le contexte principal du projet. Pour des informations plus déta
   - Paiements SumUp (Phase F)
   - Groupement Réservations Multi-Activités (Post-Phase F)
 
-- **[CLAUDE_DEPLOY.md](CLAUDE_DEPLOY.md)** : Guide de déploiement et infrastructure
-  - Docker et Docker Compose
+- **[CLAUDE_DEPLOY.md](CLAUDE_DEPLOY.md)** : Guide de déploiement générique
+  - Docker et Docker Compose (configuration générique)
   - Kubernetes (manifests, secrets, deployments)
   - CI/CD avec GitHub Actions
   - Variables d'environnement production
   - Monitoring, Logging, Backups
   - Sécurité et Troubleshooting
+
+- **[CLAUDE_CICD.md](CLAUDE_CICD.md)** : CI/CD spécifique homelab (référence)
+  - Gitea Actions (git.ratons.ovh)
+  - Harbor Registry (harbor.ratons.ovh)
+  - Workflows de build, test, et déploiement
+  - Stratégie de tagging Docker
+  - Mirroring vers GitHub
+
+- **[CLAUDE_K3S.md](CLAUDE_K3S.md)** : Kubernetes K3s spécifique homelab (référence)
+  - K3s cluster (*.ratons.ovh)
+  - Traefik ingress controller
+  - Authelia SSO/2FA
+  - cert-manager (Let's Encrypt)
+  - Middlewares et sécurité
 
 ## Status Actuel
 

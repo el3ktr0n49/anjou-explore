@@ -363,6 +363,13 @@ import Layout from '../../layouts/Layout.astro';
         return;
       }
 
+      // Vérifier si changement de mot de passe requis
+      if (data.admin?.mustChangePassword) {
+        console.log('🔒 Changement de mot de passe requis, redirection...');
+        window.location.href = '/admin/change-password';
+        return;
+      }
+
       // Afficher le nom de l'admin
       const adminNameEl = document.getElementById('admin-name');
       if (adminNameEl) {

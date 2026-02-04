@@ -267,8 +267,13 @@ import Layout from '../../layouts/Layout.astro';
       const data = await response.json();
 
       if (data.authenticated) {
-        // Déjà connecté, rediriger vers le dashboard
-        window.location.href = '/admin/dashboard';
+        // Vérifier si changement de mot de passe requis
+        if (data.admin?.mustChangePassword) {
+          window.location.href = '/admin/change-password';
+        } else {
+          // Déjà connecté, rediriger vers le dashboard
+          window.location.href = '/admin/dashboard';
+        }
       }
     } catch (error) {
       // Erreur ou pas connecté, rester sur la page de login
@@ -318,10 +323,19 @@ import Layout from '../../layouts/Layout.astro';
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Succès → Afficher message de succès puis rediriger
+        // Succès → Vérifier si changement de mot de passe requis
+        console.log('🔍 [DEBUG] Login successful, result:', result);
+        console.log('🔍 [DEBUG] mustChangePassword:', result.admin?.mustChangePassword);
+
         if (buttonText) buttonText.textContent = 'Connexion réussie !';
         setTimeout(() => {
-          window.location.href = '/admin/dashboard';
+          if (result.admin?.mustChangePassword) {
+            console.log('🔍 [DEBUG] Redirecting to change-password');
+            window.location.href = '/admin/change-password';
+          } else {
+            console.log('🔍 [DEBUG] Redirecting to dashboard');
+            window.location.href = '/admin/dashboard';
+          }
         }, 500);
       } else {
         // Erreur → Afficher message

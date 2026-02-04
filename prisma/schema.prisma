@@ -14,12 +14,15 @@ datasource db {
 // ═══════════════════════════════════════════════════════════
 
 model Admin {
-  id        String   @id @default(uuid())
-  name      String   @unique // "José", "Fabien", "Benoît", "Adrien"
-  secret2FA String   @map("secret_2fa") // Secret Google Authenticator unique
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String    @id @default(uuid())
+  name               String    @unique // "José", "Fabien", "Benoît", "Adrien"
+  secret2FA          String    @map("secret_2fa") // Secret Google Authenticator unique
+  password           String    // Hash bcrypt du mot de passe individuel
+  mustChangePassword Boolean   @default(true) @map("must_change_password") // Forcer changement au premier login
+  passwordChangedAt  DateTime? @map("password_changed_at") // Date du dernier changement
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   @@map("admins")
 }

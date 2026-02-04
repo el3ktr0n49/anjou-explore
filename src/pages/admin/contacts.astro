@@ -49,6 +49,27 @@ import '../../styles/admin/contacts.css';
 </Layout>
 
 <script>
+  // Vérifier l'authentification et le changement de mot de passe au chargement
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/auth/verify', { credentials: 'include' });
+      const data = await response.json();
+
+      if (!data.authenticated) {
+        window.location.href = '/admin/login';
+        return;
+      }
+
+      if (data.admin?.mustChangePassword) {
+        window.location.href = '/admin/change-password';
+        return;
+      }
+    } catch (error) {
+      console.error('Erreur de vérification:', error);
+      window.location.href = '/admin/login';
+    }
+  }
+
   // Simple logout handler
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
@@ -57,4 +78,7 @@ import '../../styles/admin/contacts.css';
       window.location.href = '/admin/login';
     });
   }
+
+  // Vérifier l'auth au chargement
+  checkAuth();
 </script>

@@ -3,8 +3,15 @@
 Guide de déploiement pour Anjou Explore - Docker, Kubernetes, CI/CD
 
 **Contexte spécialisé pour les tâches de déploiement et infrastructure.**
-Pour le contexte général du projet, voir [CLAUDE.md](CLAUDE.md).
-Pour l'historique des phases de développement, voir [CLAUDE_PHASES.md](CLAUDE_PHASES.md).
+
+## Documentation de Déploiement
+
+- **[CLAUDE.md](CLAUDE.md)** : Contexte général du projet
+- **[CLAUDE_PHASES.md](CLAUDE_PHASES.md)** : Historique des phases de développement
+- **[CLAUDE_CICD.md](CLAUDE_CICD.md)** : CI/CD spécifique homelab (Gitea Actions + Harbor)
+- **[CLAUDE_K3S.md](CLAUDE_K3S.md)** : Kubernetes K3s spécifique homelab (Traefik + Authelia)
+
+**Note** : Ce document contient des configurations génériques pour tout environnement cloud ou on-premise. Pour un déploiement sur l'infrastructure homelab ratons.ovh, référez-vous aux documents CLAUDE_CICD.md et CLAUDE_K3S.md.
 
 ---
 

@@ -16,8 +16,13 @@
       const data = await response.json();
 
       if (data.authenticated) {
-        // Session active → rediriger vers dashboard
-        window.location.href = '/admin/dashboard';
+        // Vérifier si changement de mot de passe requis
+        if (data.admin?.mustChangePassword) {
+          window.location.href = '/admin/change-password';
+        } else {
+          // Session active → rediriger vers dashboard
+          window.location.href = '/admin/dashboard';
+        }
       } else {
         // Pas de session → rediriger vers login
         window.location.href = '/admin/login';

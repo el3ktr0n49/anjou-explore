@@ -7,7 +7,7 @@
  * Response success (200):
  * {
  *   authenticated: true,
- *   admin: { id, name }
+ *   admin: { id, name, mustChangePassword }
  * }
  *
  * Response not authenticated (401):
@@ -18,6 +18,7 @@
 
 import type { APIRoute } from 'astro';
 import { requireAuth } from '../../../lib/auth/middleware';
+import { prisma } from '../../../lib/db/client';
 
 export const GET: APIRoute = async (context) => {
   const admin = await requireAuth(context);
@@ -36,12 +37,37 @@ export const GET: APIRoute = async (context) => {
     );
   }
 
+  // Récupérer les données complètes de l'admin depuis la BDD
+  const adminData = await prisma.admin.findUnique({
+    where: { id: admin.adminId },
+    select: {
+      id: true,
+      name: true,
+      mustChangePassword: true,
+    },
+  });
+
+  if (!adminData) {
+    return new Response(
+      JSON.stringify({
+        authenticated: false,
+      }),
+      {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  }
+
   return new Response(
     JSON.stringify({
       authenticated: true,
       admin: {
-        id: admin.adminId,
-        name: admin.adminName,
+        id: adminData.id,
+        name: adminData.name,
+        mustChangePassword: adminData.mustChangePassword,
       },
     }),
     {
