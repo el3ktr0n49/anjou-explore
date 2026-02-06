@@ -69,10 +69,9 @@ jobs:
         run: bun test || echo "No tests configured, skipping"
         continue-on-error: true
 
-      - name: Build Astro
-        env:
-          DATABASE_URL: "postgresql://user:pass@localhost:5432/db?schema=public"
-        run: bun run build
+      # Note: Le build Astro est fait dans le Dockerfile (pas besoin de le faire ici)
+      # Supprimer cette step évite les problèmes avec Sharp (dépendances natives)
+      # et réduit le temps de CI/CD (un seul build au lieu de deux)
 
   # Job 2: Build and Push Docker Image
   docker-build-push:
