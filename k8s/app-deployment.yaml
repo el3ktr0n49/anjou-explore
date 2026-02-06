@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anjouexplore-app
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+    component: app
+    version: v1.0.0
+spec:
+  replicas: 1  # Scalable si besoin : kubectl scale deployment/anjouexplore-app --replicas=2
+  selector:
+    matchLabels:
+      app: anjouexplore
+  template:
+    metadata:
+      labels:
+        app: anjouexplore
+        component: app
+        version: v1.0.0
+    spec:
+      serviceAccountName: anjouexplore
+      imagePullSecrets:
+        - name: harbor-registry
+      # InitContainers : Attendent que PostgreSQL soit prêt et initialisent la DB
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:18.1-alpine
+          command:
+            - sh
+            - -c
+            - |
+              echo "⏳ Waiting for PostgreSQL to be ready..."
+              until pg_isready -h postgres -p 5432 -U $POSTGRES_USER; do
+                echo "PostgreSQL is unavailable - sleeping"
+                sleep 2
+              done
+              echo "✅ PostgreSQL is ready!"
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+
+        # Initialise la base de données (migrations + seed si premier déploiement)
+        - name: init-database
+          image: harbor.ratons.ovh/anjouexplore/anjouexplore:latest
+          imagePullPolicy: Always
+          command: ["bun", "run", "scripts/init-db.ts"]
+          envFrom:
+            - configMapRef:
+                name: anjouexplore-config
+            - secretRef:
+                name: anjouexplore-secret
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: anjouexplore
+          image: harbor.ratons.ovh/anjouexplore/anjouexplore:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 4321
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: anjouexplore-config
+            - secretRef:
+                name: anjouexplore-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000  # bun user
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: astro-cache
+              mountPath: /app/.astro
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: astro-cache
+          emptyDir: {}
+      restartPolicy: Always

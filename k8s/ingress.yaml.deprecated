@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: anjouexplore
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+  annotations:
+    # Traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+
+    # Let's Encrypt (cert-manager)
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+    # Pas de middleware Authelia : l'application gère son propre 2FA
+    # Les pages admin sont protégées par JWT + Google Authenticator intégré
+
+    # Métadonnées
+    app.kubernetes.io/name: anjouexplore
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/description: "Site web Anjou Explore - Escapades nature, patrimoine et gastronomie"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - anjouexplore.ratons.ovh
+      secretName: anjouexplore-tls
+  rules:
+    - host: anjouexplore.ratons.ovh
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: anjouexplore-app
+                port:
+                  name: http

@@ -1,0 +1,25 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pgadmin
+  namespace: anjouexplore
+  labels:
+    app: pgadmin
+  annotations:
+    app.kubernetes.io/name: pgadmin
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/description: "Interface d'administration PostgreSQL pour Anjou Explore"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`anjouexplore-pgadmin.ratons.ovh`)
+      kind: Rule
+      middlewares:
+        - name: authelia
+          namespace: authelia
+      services:
+        - name: pgadmin
+          port: 80
+  tls:
+    secretName: ratons-ovh-wildcard-tls

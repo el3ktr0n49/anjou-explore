@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anjouexplore-config
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+data:
+  # Application
+  NODE_ENV: "production"
+  APP_URL: "https://anjouexplore.ratons.ovh"
+  PORT: "4321"
+
+  # JWT
+  JWT_EXPIRATION_HOURS: "24"
+
+  # 2FA (toujours activé en production)
+  ENABLE_2FA: "true"
+
+  # Email
+  EMAIL_FROM: "no-reply@ratons.ovh"
+
+  # Security
+  COOKIE_SECURE: "true"
+  CORS_ORIGINS: "https://anjouexplore.ratons.ovh,https://www.anjouexplore.ratons.ovh,https://www.anjouexplore.com,https://anjouexplore.com"

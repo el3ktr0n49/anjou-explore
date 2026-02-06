@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: anjouexplore
+  labels:
+    app: postgres
+    component: backup
+spec:
+  # Tous les jours à 2h du matin (heure UTC)
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: postgres
+            component: backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: postgres:18.1-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  echo "🔄 Starting PostgreSQL backup..."
+
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                  BACKUP_FILE="/backups/anjouexplore_backup_${TIMESTAMP}.sql.gz"
+
+                  echo "📦 Creating dump: ${BACKUP_FILE}"
+                  pg_dump "${DATABASE_URL}" | gzip > "${BACKUP_FILE}"
+
+                  # Vérifier que le backup est valide
+                  if [ -s "${BACKUP_FILE}" ]; then
+                    echo "✅ Backup successful: $(du -h ${BACKUP_FILE} | cut -f1)"
+                  else
+                    echo "❌ Backup failed: file is empty"
+                    exit 1
+                  fi
+
+                  # Nettoyer les anciens backups (garder les 30 derniers)
+                  echo "🧹 Cleaning old backups (keeping last 30)..."
+                  ls -t /backups/*.sql.gz | tail -n +31 | xargs -r rm -f
+
+                  echo "📊 Current backups:"
+                  ls -lh /backups/ | tail -n +2
+
+                  echo "✅ Backup completed successfully!"
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: DATABASE_URL
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_PASSWORD
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "256Mi"
+                  cpu: "500m"
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: backup-pvc

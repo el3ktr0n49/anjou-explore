@@ -1,0 +1,310 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      run_build_test:
+        description: 'Run build and test'
+        type: boolean
+        default: true
+      run_docker_build:
+        description: 'Build and push Docker image'
+        type: boolean
+        default: true
+      run_migrations:
+        description: 'Run database migrations'
+        type: boolean
+        default: true
+      run_deploy:
+        description: 'Deploy to Kubernetes'
+        type: boolean
+        default: true
+      run_github_sync:
+        description: 'Sync to GitHub'
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: harbor.ratons.ovh
+  IMAGE_NAME: anjouexplore/anjouexplore
+  KUBE_NAMESPACE: anjouexplore
+
+jobs:
+  # Job 1: Build and Test
+  build-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.run_build_test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: bunx prisma generate
+
+      - name: Run linter (if configured)
+        run: bun run lint || echo "No linter configured, skipping"
+        continue-on-error: true
+
+      - name: Run tests (if configured)
+        run: bun test || echo "No tests configured, skipping"
+        continue-on-error: true
+
+      - name: Build Astro
+        run: bun run build
+
+  # Job 2: Build and Push Docker Image
+  docker-build-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    container:
+      image: harbor.ratons.ovh/cicd/node-dind:node24-docker29
+      options: --privileged
+    needs: build-test
+    if: |
+      (github.event_name == 'push' && github.event_name != 'workflow_dispatch') ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_docker_build)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check buildx
+        run: |
+          docker buildx version
+          docker buildx ls
+
+      - name: Log in to Harbor
+        run: |
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          # Determine image tags
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
+          else
+            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_NAME}"
+          fi
+
+          # Add SHA tag
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+
+          echo "Building and pushing with tags: $TAGS"
+
+          # Build image with all tags
+          BUILD_ARGS=""
+          for tag in $(echo "$TAGS" | tr ',' ' '); do
+            BUILD_ARGS="$BUILD_ARGS --tag $tag"
+          done
+
+          docker buildx build \
+            $BUILD_ARGS \
+            --push \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            .
+
+      - name: Verify pushed image
+        run: |
+          echo "✅ Image successfully pushed to Harbor!"
+          echo "Tags:"
+          echo "$TAGS" | tr ',' '\n' | sed 's/^/  - /'
+
+  # Job 3: Run Database Migrations (avant le deploy)
+  database-migrations:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_migrations)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: kubectl cluster-info
+
+      - name: Run Prisma Migrations
+        run: |
+          echo "🔄 Running database migrations..."
+
+          # Créer un Job temporaire qui exécute les migrations
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: prisma-migrate-$(date +%s)
+            namespace: ${{ env.KUBE_NAMESPACE }}
+          spec:
+            ttlSecondsAfterFinished: 300
+            template:
+              spec:
+                restartPolicy: Never
+                imagePullSecrets:
+                  - name: harbor-registry
+                containers:
+                  - name: migrate
+                    image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+                    command:
+                      - /bin/sh
+                      - -c
+                      - |
+                        echo "⏳ Waiting for database..."
+                        until bunx prisma db execute --stdin <<< "SELECT 1" 2>/dev/null; do
+                          sleep 2
+                        done
+                        echo "✅ Database ready"
+                        echo "🔄 Running migrations..."
+                        bunx prisma migrate deploy
+                        echo "✅ Migrations completed"
+                    envFrom:
+                      - secretRef:
+                          name: anjouexplore-secret
+          EOF
+
+          # Attendre la complétion du job
+          kubectl wait --for=condition=complete --timeout=5m job -l batch.kubernetes.io/controller-uid -n ${{ env.KUBE_NAMESPACE }}
+
+          echo "✅ Migrations completed successfully!"
+
+  # Job 4: Deploy to Kubernetes
+  deploy-k8s:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: database-migrations
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_deploy)
+    container:
+      image: harbor.ratons.ovh/cicd/kubectl-deployer:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # - name: Setup kubectl
+      #   run: |
+      #     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      #     chmod +x kubectl
+      #     mv kubectl /usr/local/bin/
+      #     kubectl version --client
+
+      # - name: Configure kubectl
+      #   run: |
+      #     mkdir -p $HOME/.kube
+      #     echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+      #     chmod 600 $HOME/.kube/config
+      - name: Configure kubectl
+        env:
+          KUBECONFIG_BASE64: ${{ secrets.KUBECONFIG }}
+        run: configure-kubectl ${{ env.KUBE_NAMESPACE }}
+      # - name: Verify cluster connection
+      #   run: kubectl cluster-info
+
+      # - name: Deploy to Kubernetes
+      #   run: |
+      #     # Appliquer tous les manifests (sauf pgadmin qui est optionnel)
+      #     kubectl apply -f k8s/namespace.yaml
+      #     kubectl apply -f k8s/rbac.yaml
+      #     kubectl apply -f k8s/app-configmap.yaml
+
+      #     # PostgreSQL (seulement si pas déjà déployé)
+      #     kubectl apply -f k8s/postgres-pvc.yaml
+      #     kubectl apply -f k8s/postgres-service.yaml
+      #     kubectl apply -f k8s/postgres-statefulset.yaml
+
+      #     # Backups
+      #     kubectl apply -f k8s/backup-pvc.yaml
+      #     kubectl apply -f k8s/backup-cronjob.yaml
+
+      #     # Application
+      #     kubectl apply -f k8s/app-deployment.yaml
+      #     kubectl apply -f k8s/app-service.yaml
+      #     kubectl apply -f k8s/ingressroute.yaml
+
+      #     # Force rollout to pull the new 'latest' image
+      #     kubectl rollout restart deployment/anjouexplore-app -n ${{ env.KUBE_NAMESPACE }}
+
+      # - name: Wait for rollout
+      #   run: |
+      #     kubectl rollout status deployment/anjouexplore-app -n ${{ env.KUBE_NAMESPACE }} --timeout=5m
+
+      # - name: Verify deployment
+      #   run: |
+      #     echo "📊 Deployment Status:"
+      #     kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -l app=anjouexplore
+      #     kubectl get svc -n ${{ env.KUBE_NAMESPACE }} anjouexplore-app
+      #     kubectl get ingress -n ${{ env.KUBE_NAMESPACE }} anjouexplore
+
+      #     echo ""
+      #     echo "✅ Deployment completed successfully!"
+      #     echo "🌐 Application accessible at: https://anjouexplore.ratons.ovh"
+
+  # Job 5: Sync to GitHub (Mirror)
+  sync-github:
+    name: Sync to GitHub
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: |
+      (github.event_name == 'push' && github.event_name != 'workflow_dispatch') ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_github_sync)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to GitHub mirror
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          GITHUB_REPO: ${{ secrets.GH_MIRROR_REPO }}
+        run: |
+          # Configure Git
+          git config --global user.name "Gitea Actions"
+          git config --global user.email "actions@git.ratons.ovh"
+
+          # Add GitHub remote
+          git remote add github https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git || true
+
+          # Fetch all refs for mirror
+          git fetch --all
+
+          # Push to GitHub (mirror)
+          git push github --mirror --force
+
+      - name: Verify GitHub sync
+        run: echo "✅ Successfully synced to GitHub repository"

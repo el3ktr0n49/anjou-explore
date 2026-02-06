@@ -15,13 +15,11 @@ const connectionString = `${process.env.DATABASE_URL}`
 const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
-async function main() {
-  console.log('🌱 Début du seed de la base de données...\n');
-
-  // ═══════════════════════════════════════════════════════════
-  // 1. CRÉATION DES ADMINS AVEC 2FA
-  // ═══════════════════════════════════════════════════════════
-
+/**
+ * Seed uniquement les administrateurs (utilisé en production)
+ * Fonction exportée pour être appelée par init-db.ts
+ */
+export async function seedAdmins() {
   console.log('👤 Création des administrateurs...');
 
   const adminNames = ['José', 'Fabien', 'Benoît', 'Adrien'];
@@ -90,6 +88,16 @@ async function main() {
     console.log(admin.qrCode);
     console.log('─'.repeat(70));
   }
+}
+
+async function main() {
+  console.log('🌱 Début du seed de la base de données...\n');
+
+  // ═══════════════════════════════════════════════════════════
+  // 1. CRÉATION DES ADMINS AVEC 2FA
+  // ═══════════════════════════════════════════════════════════
+
+  await seedAdmins();
 
   // ═══════════════════════════════════════════════════════════
   // 2. CRÉATION DES ÉVÉNEMENTS

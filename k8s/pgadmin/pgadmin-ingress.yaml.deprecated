@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgadmin
+  namespace: anjouexplore
+  labels:
+    app: pgadmin
+  annotations:
+    # Traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+
+    # Let's Encrypt (cert-manager)
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+    # Middlewares : Authelia 2FA obligatoire pour accès base de données
+    traefik.ingress.kubernetes.io/router.middlewares: authelia-authelia@kubernetescrd
+
+    # Métadonnées
+    app.kubernetes.io/name: pgadmin
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/description: "Interface d'administration PostgreSQL pour Anjou Explore"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - pgadmin.anjouexplore.ratons.ovh
+      secretName: pgadmin-anjouexplore-tls
+  rules:
+    - host: pgadmin.anjouexplore.ratons.ovh
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin
+                port:
+                  name: http

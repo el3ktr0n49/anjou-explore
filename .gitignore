@@ -37,3 +37,7 @@ nul
 
 # Prisma
 prisma/migrations/.prisma_migrate_lock
+
+# Kubernetes Secrets (ne jamais commiter)
+k8s/*-secret.yaml
+k8s/pgadmin/*-secret.yaml

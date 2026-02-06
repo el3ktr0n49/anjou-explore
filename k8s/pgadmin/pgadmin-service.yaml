@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  namespace: anjouexplore
+  labels:
+    app: pgadmin
+    component: database-admin
+spec:
+  type: ClusterIP
+  selector:
+    app: pgadmin
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  sessionAffinity: None

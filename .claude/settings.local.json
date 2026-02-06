@@ -20,7 +20,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(git diff:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git restore:*)"
     ]
   }
 }

@@ -1,0 +1,11 @@
+# ServiceAccount for Anjou Explore
+# Note: Cette application n'a pas besoin d'accès à l'API Kubernetes
+# Le ServiceAccount est créé pour suivre les bonnes pratiques de sécurité
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: anjouexplore
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
