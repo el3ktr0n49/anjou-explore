@@ -21,7 +21,13 @@
       "Bash(findstr:*)",
       "Bash(git diff:*)",
       "Bash(cd:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(git push:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(xargs:*)",
+      "Bash(kubectl apply:*)"
     ]
   }
 }

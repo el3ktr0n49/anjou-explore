@@ -1,3 +1,6 @@
+// Force SSR : Route API protégée qui accède à request.headers
+export const prerender = false;
+
 /**
  * API Routes pour la gestion des événements
  *

@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètres dynamiques [id] et [activityId]
+export const prerender = false;
+
 /**
  * API Routes pour la gestion d'une activité spécifique
  *

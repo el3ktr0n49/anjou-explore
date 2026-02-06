@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètre dynamique [id]
+export const prerender = false;
+
 /**
  * PUT /api/admin/contacts/[id]
  * Mettre à jour le statut d'une demande de contact

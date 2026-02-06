@@ -239,7 +239,7 @@ jobs:
           echo "📊 Deployment Status:"
           kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -l app=anjouexplore
           kubectl get svc -n ${{ env.KUBE_NAMESPACE }} anjouexplore-app
-          kubectl get ingress -n ${{ env.KUBE_NAMESPACE }} anjouexplore
+          kubectl get ingressroute -n ${{ env.KUBE_NAMESPACE }} anjouexplore
 
           echo ""
           echo "✅ Deployment completed successfully!"

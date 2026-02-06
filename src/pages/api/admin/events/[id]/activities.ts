@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètre dynamique [id]
+export const prerender = false;
+
 /**
  * POST /api/admin/events/[id]/activities
  * Créer une activité pour un événement

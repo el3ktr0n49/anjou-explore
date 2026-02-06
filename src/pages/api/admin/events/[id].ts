@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètre dynamique [id]
+export const prerender = false;
+
 /**
  * API Routes pour la gestion d'un événement spécifique
  *

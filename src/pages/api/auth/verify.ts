@@ -1,3 +1,6 @@
+// Force SSR : Route API qui accède à request.headers pour auth
+export const prerender = false;
+
 /**
  * GET /api/auth/verify
  *

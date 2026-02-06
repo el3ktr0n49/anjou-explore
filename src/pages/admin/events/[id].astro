@@ -1,4 +1,7 @@
 ---
+// Force SSR : Cette page a une route dynamique [id] et accède à request.headers
+export const prerender = false;
+
 import Layout from '../../../layouts/Layout.astro';
 import EventDetailsPage from '../../../components/admin/islands/EventDetailsPage';
 

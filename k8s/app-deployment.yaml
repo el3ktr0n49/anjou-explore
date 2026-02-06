@@ -79,27 +79,36 @@ spec:
                 name: anjouexplore-secret
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "1Gi"    # Augmenté temporairement pour debug
+              cpu: "500m"
             limits:
-              memory: "512Mi"
-              cpu: "1000m"
+              memory: "2Gi"    # Augmenté : consommation excessive (à investiguer)
+              cpu: "4000m"     # Augmenté
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15  # Attendre que le serveur démarre
+            periodSeconds: 5         # Vérifier toutes les 5s
+            timeoutSeconds: 3
+            failureThreshold: 30     # 30 tentatives × 5s = 2min30 max pour démarrer
           livenessProbe:
             httpGet:
               path: /api/health
               port: http
-            initialDelaySeconds: 30
+            initialDelaySeconds: 0   # startupProbe gère le démarrage
             periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
+            timeoutSeconds: 10       # Connexion DB peut être lente
+            failureThreshold: 6      # Plus tolérant (3 → 6 : 3 minutes avant de tuer)
           readinessProbe:
             httpGet:
               path: /api/health
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 20  # Serveur Astro met ~15s à démarrer
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 5
+            failureThreshold: 6      # Plus tolérant (3 → 6 : 1 minute avant "not ready")
+            successThreshold: 1
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000  # bun user

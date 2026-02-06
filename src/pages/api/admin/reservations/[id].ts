@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètre dynamique [id]
+export const prerender = false;
+
 /**
  * PUT /api/admin/reservations/[id]
  * Mettre à jour le statut de paiement d'une réservation

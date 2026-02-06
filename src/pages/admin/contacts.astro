@@ -1,4 +1,7 @@
 ---
+// Force SSR : Page admin protégée avec contenu dynamique
+export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
 import ContactsPage from '../../components/admin/islands/ContactsPage';
 import '../../styles/admin/contacts.css';

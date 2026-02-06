@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètres dynamiques [id] et [activityId]
+export const prerender = false;
+
 /**
  * POST /api/admin/events/[id]/activities/[activityId]/pricing
  * Créer un tarif pour une activité

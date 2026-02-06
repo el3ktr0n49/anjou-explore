@@ -1,3 +1,6 @@
+// Force SSR : Route API avec paramètres dynamiques [id] et [pricingId]
+export const prerender = false;
+
 /**
  * API Routes pour la gestion d'un tarif spécifique
  *
