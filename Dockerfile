@@ -5,7 +5,7 @@ FROM oven/bun:1-alpine AS builder
 WORKDIR /build
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 
 # Install ALL dependencies (including devDependencies for build)
 RUN bun install --frozen-lockfile
@@ -33,7 +33,7 @@ LABEL version="1.0.0"
 WORKDIR /app
 
 # Install production dependencies only
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # Copy Prisma files and generated client
@@ -63,7 +63,7 @@ ENV HOST=0.0.0.0
 ENV PORT=4321
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD bun -e "fetch('http://localhost:4321/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 # Start application (Astro standalone server with Node adapter)
