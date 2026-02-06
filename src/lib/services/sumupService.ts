@@ -57,13 +57,19 @@ const SUMUP_MERCHANT_CODE = process.env.SUMUP_MERCHANT_CODE;
 const SUMUP_PAY_TO_EMAIL = process.env.SUMUP_PAY_TO_EMAIL || 'anjouexplore@gmail.com';
 const SUMUP_BASE_URL = 'https://api.sumup.com/v0.1';
 
-if (!SUMUP_API_KEY) {
-  throw new Error('SUMUP_API_KEY manquante dans les variables d\'environnement');
-}
+/**
+ * Valide la configuration SumUp au runtime (lazy)
+ * @throws {Error} Si SUMUP_API_KEY manquante
+ */
+function validateConfig(): void {
+  if (!SUMUP_API_KEY) {
+    throw new Error('SUMUP_API_KEY manquante dans les variables d\'environnement');
+  }
 
-// Priorité : merchant_code > pay_to_email
-if (!SUMUP_MERCHANT_CODE && !SUMUP_PAY_TO_EMAIL) {
-  throw new Error('SUMUP_MERCHANT_CODE ou SUMUP_PAY_TO_EMAIL requis');
+  // Priorité : merchant_code > pay_to_email
+  if (!SUMUP_MERCHANT_CODE && !SUMUP_PAY_TO_EMAIL) {
+    throw new Error('SUMUP_MERCHANT_CODE ou SUMUP_PAY_TO_EMAIL requis');
+  }
 }
 
 // ============================================================================
@@ -75,6 +81,9 @@ if (!SUMUP_MERCHANT_CODE && !SUMUP_PAY_TO_EMAIL) {
  */
 export async function createCheckout(request: SumUpCheckoutRequest): Promise<SumUpCheckoutResponse> {
   try {
+    // Valider la config au runtime (pas au build)
+    validateConfig();
+
     // Log pour debug
     console.log('[SumUp] Création checkout avec:', SUMUP_MERCHANT_CODE
       ? `merchant_code=${SUMUP_MERCHANT_CODE}`
@@ -136,6 +145,9 @@ export async function createCheckout(request: SumUpCheckoutRequest): Promise<Sum
  */
 export async function getCheckout(checkoutId: string): Promise<SumUpCheckoutDetails> {
   try {
+    // Valider la config au runtime (pas au build)
+    validateConfig();
+
     const response = await fetch(`${SUMUP_BASE_URL}/checkouts/${checkoutId}`, {
       method: 'GET',
       headers: {

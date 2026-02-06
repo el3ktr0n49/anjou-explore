@@ -1,3 +1,6 @@
+// Force SSR : Endpoint runtime qui accède à la DB
+export const prerender = false;
+
 import type { APIRoute } from 'astro';
 import { prisma } from '../../lib/db/client';
 
