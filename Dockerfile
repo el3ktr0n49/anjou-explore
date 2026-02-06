@@ -4,6 +4,15 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /build
 
+# Install build tools for Sharp (native image processing library)
+# Sharp nécessite python3, make, g++ pour compiler ses binaires natifs
+# vips-dev fournit libvips requis par Sharp
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    vips-dev
+
 # Copy package files
 COPY package.json bun.lock ./
 
@@ -32,14 +41,15 @@ LABEL version="1.0.0"
 
 WORKDIR /app
 
-# Install production dependencies only
+# Copy package files (needed for bun runtime)
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
 
-# Copy Prisma files and generated client
+# Copy all node_modules from builder (includes Sharp binaries compiled in builder)
+# Note: Copie aussi les devDependencies, mais simplifie le build et évite les erreurs Sharp
+COPY --from=builder /build/node_modules ./node_modules
+
+# Copy Prisma files
 COPY --from=builder /build/prisma ./prisma
-COPY --from=builder /build/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /build/node_modules/@prisma ./node_modules/@prisma
 
 # Copy Prisma config (workaround for Prisma 7.2.0 DATABASE_URL bug)
 COPY --from=builder /build/prisma.config.ts ./prisma.config.ts
