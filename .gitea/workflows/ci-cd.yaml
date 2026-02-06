@@ -146,9 +146,6 @@ jobs:
     container:
       image: harbor.ratons.ovh/cicd/kubectl-deployer:latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Configure kubectl
         env:
           KUBECONFIG_BASE64: ${{ secrets.KUBECONFIG }}
