@@ -29,7 +29,9 @@ RUN bunx prisma generate
 COPY . .
 
 # Build Astro application
-RUN bun run build
+# Note: DATABASE_URL requis par Prisma client même au build (import du module)
+# Valeur factice OK car aucune connexion DB réelle pendant le build
+RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db?schema=public" bun run build
 
 # Stage 2: Production image
 FROM oven/bun:1-alpine
@@ -44,8 +46,10 @@ WORKDIR /app
 # Copy package files (needed for bun runtime)
 COPY package.json bun.lock ./
 
-# Copy all node_modules from builder (includes Sharp binaries compiled in builder)
-# Note: Copie aussi les devDependencies, mais simplifie le build et évite les erreurs Sharp
+# Copy ALL node_modules from builder (includes compiled Sharp binaries)
+# Note: Inclut les devDependencies (~100MB extra) mais évite la recompilation de Sharp
+# Alternative : bun install --production nécessite python3/make/g++/vips-dev (layers lourds)
+# Trade-off : 981MB (copie complète) vs 1.1GB (install prod + build tools)
 COPY --from=builder /build/node_modules ./node_modules
 
 # Copy Prisma files
