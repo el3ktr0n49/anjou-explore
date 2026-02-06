@@ -143,22 +143,16 @@ jobs:
     if: |
       (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch' && inputs.run_migrations)
+    container:
+      image: harbor.ratons.ovh/cicd/kubectl-deployer:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          mv kubectl /usr/local/bin/
-          kubectl version --client
-
       - name: Configure kubectl
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+        env:
+          KUBECONFIG_BASE64: ${{ secrets.KUBECONFIG }}
+        run: configure-kubectl ${{ env.KUBE_NAMESPACE }}
 
       - name: Verify cluster connection
         run: kubectl cluster-info
@@ -189,7 +183,8 @@ jobs:
                       - -c
                       - |
                         echo "⏳ Waiting for database..."
-                        until bunx prisma db execute --stdin <<< "SELECT 1" 2>/dev/null; do
+                        until echo "SELECT 1" | bunx prisma db execute --stdin 2>/dev/null; do
+                          echo "Database not ready, retrying..."
                           sleep 2
                         done
                         echo "✅ Database ready"
