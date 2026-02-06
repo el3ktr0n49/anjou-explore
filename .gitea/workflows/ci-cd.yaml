@@ -57,7 +57,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: bunx prisma generate
+        run: |
+          export DATABASE_URL="postgresql://user:pass@localhost:5432/db?schema=public"
+          bunx prisma generate
 
       - name: Run linter (if configured)
         run: bun run lint || echo "No linter configured, skipping"
@@ -68,6 +70,8 @@ jobs:
         continue-on-error: true
 
       - name: Build Astro
+        env:
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/db?schema=public"
         run: bun run build
 
   # Job 2: Build and Push Docker Image
