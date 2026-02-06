@@ -36,10 +36,20 @@ async function runMigrations(): Promise<void> {
   console.log('🔄 Running Prisma migrations...');
 
   try {
+    // Vérifier que DATABASE_URL est défini
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not set in environment variables');
+    }
+
     // En production, utiliser `prisma migrate deploy` (jamais `db:push`)
+    // Passer explicitement DATABASE_URL dans l'environnement pour contourner le bug Prisma 7.2.0
     const proc = Bun.spawn(['bunx', 'prisma', 'migrate', 'deploy'], {
       stdout: 'inherit',
       stderr: 'inherit',
+      env: {
+        ...process.env,
+        DATABASE_URL: process.env.DATABASE_URL, // Explicitement passé pour bug Prisma 7.2.0
+      },
     });
 
     const exitCode = await proc.exited;
@@ -103,6 +113,10 @@ async function initializeDatabase(): Promise<void> {
         const proc = Bun.spawn(['bunx', 'prisma', 'db', 'seed'], {
           stdout: 'inherit',
           stderr: 'inherit',
+          env: {
+            ...process.env,
+            DATABASE_URL: process.env.DATABASE_URL, // Explicitement passé pour bug Prisma 7.2.0
+          },
         });
         await proc.exited;
       }

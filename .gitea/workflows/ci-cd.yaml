@@ -154,69 +154,33 @@ jobs:
       - name: Verify cluster connection
         run: kubectl cluster-info
 
+      - name: Checkout migration manifest
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: k8s/prisma-migration.yaml
+          sparse-checkout-cone-mode: false
+
       - name: Run Prisma Migrations
         run: |
           echo "🔄 Running database migrations..."
 
-          # Créer un Job temporaire qui exécute les migrations
-          cat <<EOF | kubectl apply -f -
-          apiVersion: batch/v1
-          kind: Job
-          metadata:
-            name: prisma-migrate-$(date +%s)
-            namespace: ${{ env.KUBE_NAMESPACE }}
-          spec:
-            ttlSecondsAfterFinished: 300
-            template:
-              spec:
-                restartPolicy: Never
-                imagePullSecrets:
-                  - name: harbor-registry
-                containers:
-                  - name: migrate
-                    image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-                    command:
-                      - /bin/sh
-                      - -c
-                      - |
-                        echo "⏳ Waiting for database..."
+          # Supprimer les anciens Jobs de migration terminés (cleanup)
+          kubectl delete job -l app=prisma-migrate -n ${{ env.KUBE_NAMESPACE }} --ignore-not-found=true
 
-                        # Test de connexion avec timeout
-                        MAX_ATTEMPTS=30
-                        ATTEMPT=0
+          # Créer un nouveau Job avec un nom unique (timestamp)
+          JOB_NAME="prisma-migrate-$(date +%s)"
+          echo "📝 Creating migration Job: $JOB_NAME"
 
-                        until [ $ATTEMPT -eq $MAX_ATTEMPTS ]; do
-                          ATTEMPT=$((ATTEMPT + 1))
-                          echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Testing database connection..."
+          # Appliquer le Job avec un nom unique
+          cat k8s/prisma-migration.yaml | sed "s/prisma-migrate-job/$JOB_NAME/" | kubectl apply -f -
 
-                          # Générer le client Prisma si nécessaire
-                          bunx prisma generate > /dev/null 2>&1 || true
+          # Attendre la complétion du Job (timeout 5 minutes)
+          echo "⏳ Waiting for migration Job to complete..."
+          kubectl wait --for=condition=complete --timeout=5m job/$JOB_NAME -n ${{ env.KUBE_NAMESPACE }}
 
-                          # Tester la connexion avec un simple SELECT 1
-                          if echo "SELECT 1" | bunx prisma db execute --stdin; then
-                            echo "✅ Database ready!"
-                            break
-                          else
-                            echo "❌ Connection failed, retrying in 2s..."
-                            sleep 2
-                          fi
-                        done
-
-                        if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-                          echo "❌ Failed to connect to database after $MAX_ATTEMPTS attempts"
-                          exit 1
-                        fi
-
-                        echo "🔄 Running migrations..."
-                        bunx prisma migrate deploy
-                        echo "✅ Migrations completed"
-                    envFrom:
-                      - secretRef:
-                          name: anjouexplore-secret
-          EOF
-
-          # Attendre la complétion du job
-          kubectl wait --for=condition=complete --timeout=5m job -l batch.kubernetes.io/controller-uid -n ${{ env.KUBE_NAMESPACE }}
+          # Afficher les logs du Job
+          echo "📋 Migration logs:"
+          kubectl logs job/$JOB_NAME -n ${{ env.KUBE_NAMESPACE }}
 
           echo "✅ Migrations completed successfully!"
 

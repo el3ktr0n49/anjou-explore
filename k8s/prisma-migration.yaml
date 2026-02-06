@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prisma-migrate-job
+  namespace: anjouexplore
+  labels:
+    app: prisma-migrate
+    component: database-migration
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: harbor-registry
+      containers:
+        - name: migrate
+          image: harbor.ratons.ovh/anjouexplore/anjouexplore:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Vérifier que DATABASE_URL est défini
+              if [ -z "$DATABASE_URL" ]; then
+                echo "❌ ERROR: DATABASE_URL is not set!"
+                exit 1
+              fi
+
+              # Attendre que PostgreSQL soit prêt (retry 30 fois avec 2s d'intervalle = 1min max)
+              echo "⏳ Waiting for database to be ready..."
+              for i in $(seq 1 30); do
+                if bun run -e "import{prisma}from'./src/lib/db/client';await prisma.\$connect();await prisma.\$disconnect()" 2>/dev/null; then
+                  echo "✅ Database ready!"
+                  break
+                fi
+                [ $i -eq 30 ] && { echo "❌ Database not ready after 30 attempts"; exit 1; }
+                sleep 2
+              done
+
+              # Le script init-db.ts gère :
+              # - Vérification si DB vide (premier déploiement ou non)
+              # - Application des migrations Prisma si nécessaires
+              # - Seed des admins si première installation
+              # Note: prisma migrate deploy est idempotent (ne fait rien si déjà à jour)
+              echo "🔄 Running database initialization..."
+              bun run scripts/init-db.ts
+          envFrom:
+            - secretRef:
+                name: anjouexplore-secret

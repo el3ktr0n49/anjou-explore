@@ -41,8 +41,15 @@ COPY --from=builder /build/prisma ./prisma
 COPY --from=builder /build/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /build/node_modules/@prisma ./node_modules/@prisma
 
+# Copy Prisma config (workaround for Prisma 7.2.0 DATABASE_URL bug)
+COPY --from=builder /build/prisma.config.ts ./prisma.config.ts
+
 # Copy built application from builder
 COPY --from=builder /build/dist ./dist
+
+# Copy scripts directory (for init-db.ts migration script)
+COPY --from=builder /build/scripts ./scripts
+COPY --from=builder /build/src/lib ./src/lib
 
 # Copy necessary runtime files
 COPY astro.config.mjs ./
