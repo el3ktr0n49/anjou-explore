@@ -1,3 +1,6 @@
+// Force SSR : Route API qui accède à la DB
+export const prerender = false;
+
 /**
  * GET /api/public/payments/check-status?groupId=xxx  OU  ?reservationId=xxx
  *
