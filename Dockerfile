@@ -7,11 +7,11 @@ WORKDIR /build
 # Install build tools for Sharp (native image processing library)
 # Sharp nécessite python3, make, g++ pour compiler ses binaires natifs
 # vips-dev fournit libvips requis par Sharp
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    vips-dev
+# RUN apk add --no-cache \
+#     python3 \
+#     make \
+#     g++ \
+#     vips-dev
 
 # Copy package files
 COPY package.json bun.lock ./
