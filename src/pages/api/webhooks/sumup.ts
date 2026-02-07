@@ -16,6 +16,18 @@ import { getCheckout } from '../../../lib/services/sumupService';
 import { sendPaymentConfirmationEmail } from '../../../lib/email/templates';
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+function log(...args: any[]) {
+  console.log(`[${new Date().toISOString()}] [Webhook SumUp]`, ...args);
+}
+
+function logError(...args: any[]) {
+  console.error(`[${new Date().toISOString()}] [Webhook SumUp]`, ...args);
+}
+
+// ============================================================================
 // HANDLER
 // ============================================================================
 
@@ -23,10 +35,9 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     // 1. Parser le payload du webhook
     const payload = await request.json();
-    console.log('[Webhook SumUp] Payload reçu:', JSON.stringify(payload, null, 2));
+    log('Payload reçu:', JSON.stringify(payload));
 
     // 2. Extraire le checkoutId (le format exact peut varier)
-    // Possibilités : payload.checkout_id, payload.id, payload.data.id, etc.
     const checkoutId =
       payload.checkout_id ||
       payload.checkoutId ||
@@ -35,14 +46,31 @@ export const POST: APIRoute = async ({ request }) => {
       payload.event_data?.id;
 
     if (!checkoutId) {
-      console.error('[Webhook SumUp] checkoutId manquant dans le payload');
+      logError('checkoutId manquant dans le payload');
       return new Response(
         JSON.stringify({ error: 'checkoutId manquant' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // 3. Récupérer TOUTES les transactions avec ce checkoutId (groupe possible)
+    // 3. Idempotence : vérifier si déjà traité
+    //    SumUp peut appeler le webhook plusieurs fois pour le même checkout
+    const alreadyPaid = await prisma.reservation.findFirst({
+      where: {
+        sumupCheckoutId: checkoutId,
+        paymentStatus: 'PAID',
+      },
+    });
+
+    if (alreadyPaid) {
+      log(`Checkout ${checkoutId} déjà traité (réservation ${alreadyPaid.id} PAID), skip`);
+      return new Response(
+        JSON.stringify({ success: true, checkoutId, status: 'PAID', alreadyProcessed: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 4. Récupérer TOUTES les transactions avec ce checkoutId (groupe possible)
     const transactions = await prisma.paymentTransaction.findMany({
       where: { checkoutId },
       include: {
@@ -66,20 +94,20 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     if (transactions.length === 0) {
-      console.error('[Webhook SumUp] Aucune transaction trouvée pour checkoutId:', checkoutId);
+      logError('Aucune transaction trouvée pour checkoutId:', checkoutId);
       return new Response(
         JSON.stringify({ error: 'Transaction introuvable' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[Webhook SumUp] ${transactions.length} transaction(s) trouvée(s)`);
+    log(`${transactions.length} transaction(s) trouvée(s)`);
 
-    // 4. Vérifier le statut réel via l'API SumUp (sécurité)
+    // 5. Vérifier le statut réel via l'API SumUp (sécurité)
     const checkout = await getCheckout(checkoutId);
-    console.log('[Webhook SumUp] Statut checkout:', checkout.status);
+    log('Statut checkout:', checkout.status);
 
-    // 5. Préparer les données de mise à jour selon le statut
+    // 6. Préparer les données de mise à jour selon le statut
     let updateData: any = {
       sumupResponse: checkout as any,
     };
@@ -103,9 +131,9 @@ export const POST: APIRoute = async ({ request }) => {
       data: updateData,
     });
 
-    console.log(`[Webhook SumUp] ${transactions.length} transaction(s) mise(s) à jour: ${updateData.status}`);
+    log(`${transactions.length} transaction(s) mise(s) à jour: ${updateData.status}`);
 
-    // 6. Si paiement réussi, mettre à jour TOUTES les réservations
+    // 7. Si paiement réussi, mettre à jour TOUTES les réservations + envoyer email
     if (checkout.status === 'PAID') {
       const reservationIds = transactions.map(t => t.reservation.id);
 
@@ -119,9 +147,9 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
 
-      console.log(`[Webhook SumUp] ${reservationIds.length} réservation(s) mise(s) à jour: PAID`);
+      log(`${reservationIds.length} réservation(s) mise(s) à jour: PAID`);
 
-      // 7. Envoyer UN email de confirmation avec TOUTES les activités
+      // 8. Envoyer UN email de confirmation avec TOUTES les activités
       try {
         const firstReservation = transactions[0].reservation;
 
@@ -137,21 +165,19 @@ export const POST: APIRoute = async ({ request }) => {
             participants: firstReservation.participants as any,
             amount: transactions.reduce((sum, t) => sum + Number(t.reservation.amount), 0),
           },
-          // Liste détaillée des activités pour affichage email
           activities: transactions.map(t => ({
             name: t.reservation.activity?.name || t.reservation.activityName,
             participants: t.reservation.participants as Record<string, number>,
             amount: Number(t.reservation.amount),
           })),
         });
-        console.log('[Webhook SumUp] Email de confirmation envoyé');
+        log('Email de confirmation envoyé');
       } catch (emailError) {
-        console.error('[Webhook SumUp] Erreur envoi email:', emailError);
-        // Ne pas bloquer le webhook si l'email échoue
+        logError('Erreur envoi email:', emailError);
       }
     }
 
-    // 8. Retourner succès
+    // 9. Retourner succès
     return new Response(
       JSON.stringify({
         success: true,
@@ -161,7 +187,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('[Webhook SumUp] Erreur:', error);
+    logError('Erreur:', error);
 
     return new Response(
       JSON.stringify({

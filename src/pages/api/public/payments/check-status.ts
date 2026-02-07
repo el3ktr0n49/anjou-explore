@@ -33,6 +33,18 @@ const checkStatusSchema = z.object({
 });
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+function log(...args: any[]) {
+  console.log(`[${new Date().toISOString()}] [Check Status]`, ...args);
+}
+
+function logError(...args: any[]) {
+  console.error(`[${new Date().toISOString()}] [Check Status]`, ...args);
+}
+
+// ============================================================================
 // HANDLER
 // ============================================================================
 
@@ -82,10 +94,11 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // 3. Si toutes les réservations sont déjà payées, retourner le statut
+    // 3. Si toutes les réservations sont déjà payées, retourner le statut (pas d'email)
     const allPaid = reservations.every(r => r.paymentStatus === 'PAID');
 
     if (allPaid) {
+      log('Réservations déjà payées, skip');
       return new Response(
         JSON.stringify({
           status: 'PAID',
@@ -115,11 +128,11 @@ export const GET: APIRoute = async ({ url }) => {
     // 5. Vérifier le statut via l'API SumUp (utiliser la première transaction)
     const transaction = activeTransactions[0];
 
-    console.log('[Check Status] Vérification du checkout SumUp:', transaction.checkoutId);
+    log('Vérification du checkout SumUp:', transaction.checkoutId);
 
     const checkout = await getCheckout(transaction.checkoutId);
 
-    console.log('[Check Status] Statut SumUp:', checkout.status);
+    log('Statut SumUp:', checkout.status);
 
     // 6. Mettre à jour toutes les transactions avec le même checkoutId
     let needsUpdate = false;
@@ -145,20 +158,20 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     if (needsUpdate) {
-      // Mettre à jour toutes les transactions avec ce checkoutId
       await prisma.paymentTransaction.updateMany({
         where: { checkoutId: transaction.checkoutId },
         data: updateData,
       });
 
-      console.log('[Check Status] Transactions mises à jour:', updateData.status);
+      log('Transactions mises à jour:', updateData.status);
 
-      // 7. Si paiement réussi, mettre à jour toutes les réservations
+      // 7. Si paiement réussi, mettre à jour les réservations + email
       if (checkout.status === 'PAID') {
         const reservationIds = reservations.map(r => r.id);
 
-        await prisma.reservation.updateMany({
-          where: { id: { in: reservationIds } },
+        // Idempotence : ne mettre à jour que les réservations pas encore PAID
+        const updated = await prisma.reservation.updateMany({
+          where: { id: { in: reservationIds }, paymentStatus: { not: 'PAID' } },
           data: {
             paymentStatus: 'PAID',
             paidAt: new Date(),
@@ -167,35 +180,37 @@ export const GET: APIRoute = async ({ url }) => {
           },
         });
 
-        console.log(`[Check Status] ${reservations.length} réservation(s) mise(s) à jour: PAID`);
+        log(`${updated.count} réservation(s) mise(s) à jour: PAID`);
 
-        // 8. Envoyer UN seul email de confirmation avec toutes les activités
-        const firstReservation = reservations[0];
+        // Envoyer l'email SEULEMENT si on a réellement mis à jour des réservations
+        if (updated.count > 0) {
+          const firstReservation = reservations[0];
 
-        try {
-          await sendPaymentConfirmationEmail({
-            to: firstReservation.email,
-            reservation: {
-              id: firstReservation.id,
-              nom: firstReservation.nom,
-              prenom: firstReservation.prenom,
-              eventName: firstReservation.event.name,
-              eventDate: firstReservation.event.date,
-              activityName: reservations.map(r => r.activity?.name || r.activityName).join(', '),
-              participants: firstReservation.participants as any,
-              amount: reservations.reduce((sum, r) => sum + Number(r.amount), 0),
-            },
-            // Liste détaillée des activités pour affichage email
-            activities: reservations.map(r => ({
-              name: r.activity?.name || r.activityName,
-              participants: r.participants as Record<string, number>,
-              amount: Number(r.amount),
-            })),
-          });
-          console.log('[Check Status] Email de confirmation envoyé');
-        } catch (emailError) {
-          console.error('[Check Status] Erreur envoi email:', emailError);
-          // Ne pas bloquer si l'email échoue
+          try {
+            await sendPaymentConfirmationEmail({
+              to: firstReservation.email,
+              reservation: {
+                id: firstReservation.id,
+                nom: firstReservation.nom,
+                prenom: firstReservation.prenom,
+                eventName: firstReservation.event.name,
+                eventDate: firstReservation.event.date,
+                activityName: reservations.map(r => r.activity?.name || r.activityName).join(', '),
+                participants: firstReservation.participants as any,
+                amount: reservations.reduce((sum, r) => sum + Number(r.amount), 0),
+              },
+              activities: reservations.map(r => ({
+                name: r.activity?.name || r.activityName,
+                participants: r.participants as Record<string, number>,
+                amount: Number(r.amount),
+              })),
+            });
+            log('Email de confirmation envoyé');
+          } catch (emailError) {
+            logError('Erreur envoi email:', emailError);
+          }
+        } else {
+          log('Réservations déjà PAID (webhook a traité avant), email non renvoyé');
         }
 
         return new Response(
@@ -210,7 +225,7 @@ export const GET: APIRoute = async ({ url }) => {
       }
     }
 
-    // 9. Retourner le statut actuel
+    // 8. Retourner le statut actuel
     return new Response(
       JSON.stringify({
         status: checkout.status,
@@ -221,9 +236,8 @@ export const GET: APIRoute = async ({ url }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('[Check Status] Erreur:', error);
+    logError('Erreur:', error);
 
-    // Erreur de validation Zod
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
@@ -234,7 +248,6 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Erreur générique
     return new Response(
       JSON.stringify({
         error: 'Erreur lors de la vérification du statut',
