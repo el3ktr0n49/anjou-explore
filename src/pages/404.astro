@@ -1,0 +1,112 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Page introuvable - Anjou Explore"
+  description="Cette page n'existe pas. Retournez à l'accueil pour découvrir nos aventures."
+>
+  <section class="min-h-[70vh] flex items-center justify-center bg-gradient-to-b from-[var(--color-anjou-beige)] to-white py-16 px-4">
+    <div class="max-w-2xl mx-auto text-center">
+      <!-- Illustration SVG de randonneur perdu -->
+      <div class="mb-8">
+        <svg
+          class="w-48 h-48 mx-auto text-[var(--color-anjou-gold)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+          />
+        </svg>
+      </div>
+
+      <!-- Numéro 404 stylisé -->
+      <div class="mb-6">
+        <h1 class="text-8xl md:text-9xl font-serif font-bold text-[var(--color-anjou-gold)] mb-2">404</h1>
+        <div class="h-1 w-32 bg-[var(--color-anjou-gold)] mx-auto rounded"></div>
+      </div>
+
+      <!-- Message principal -->
+      <h2 class="text-2xl md:text-3xl font-serif text-[var(--color-anjou-brown)] mb-4">
+        Oups ! Vous vous êtes égaré...
+      </h2>
+
+      <p class="text-lg text-[var(--color-anjou-olive)] mb-2">
+        Cette page semble avoir pris un autre chemin.
+      </p>
+
+      <p class="text-base text-[var(--color-anjou-brown)] mb-8 italic">
+        "La plus belle escapade, c'est celle que l'on n'a pas encore faite"
+      </p>
+
+      <!-- Boutons d'action -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a
+          href="/"
+          class="inline-flex items-center gap-2 bg-[var(--color-anjou-gold)] text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          Retour à l'accueil
+        </a>
+
+        <a
+          href="/notre-catalogue"
+          class="inline-flex items-center gap-2 border-2 border-[var(--color-anjou-gold)] text-[var(--color-anjou-gold)] px-6 py-3 rounded-lg hover:bg-[var(--color-anjou-gold)] hover:text-white transition-all duration-300"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+          </svg>
+          Découvrir nos aventures
+        </a>
+      </div>
+
+      <!-- Suggestions de pages -->
+      <div class="mt-12 pt-8 border-t border-gray-200">
+        <p class="text-sm text-[var(--color-anjou-brown)] mb-4">Peut-être cherchiez-vous :</p>
+        <div class="flex flex-wrap gap-3 justify-center">
+          <a href="/equipe" class="text-sm text-[var(--color-anjou-olive)] hover:text-[var(--color-anjou-gold)] underline">L'équipe</a>
+          <span class="text-gray-300">•</span>
+          <a href="/nos-suggestions" class="text-sm text-[var(--color-anjou-olive)] hover:text-[var(--color-anjou-gold)] underline">Nos suggestions</a>
+          <span class="text-gray-300">•</span>
+          <a href="/galerie-photos" class="text-sm text-[var(--color-anjou-olive)] hover:text-[var(--color-anjou-gold)] underline">Galerie photos</a>
+          <span class="text-gray-300">•</span>
+          <a href="/formulaire-groupe" class="text-sm text-[var(--color-anjou-olive)] hover:text-[var(--color-anjou-gold)] underline">Contact</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* Animation subtile pour le numéro 404 */
+  h1 {
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Animation hover sur les boutons */
+  a {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  a:hover {
+    transform: translateY(-2px);
+  }
+</style>
