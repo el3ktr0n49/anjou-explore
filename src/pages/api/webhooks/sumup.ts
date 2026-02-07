@@ -133,12 +133,14 @@ export const POST: APIRoute = async ({ request }) => {
 
     log(`${transactions.length} transaction(s) mise(s) à jour: ${updateData.status}`);
 
-    // 7. Si paiement réussi, mettre à jour TOUTES les réservations + envoyer email
+    // 7. Si paiement réussi, mettre à jour les réservations + envoyer email
     if (checkout.status === 'PAID') {
       const reservationIds = transactions.map(t => t.reservation.id);
 
-      await prisma.reservation.updateMany({
-        where: { id: { in: reservationIds } },
+      // Idempotence atomique : ne mettre à jour QUE les réservations pas encore PAID
+      // PostgreSQL garantit qu'un seul updateMany réussira en cas d'appels concurrents
+      const updated = await prisma.reservation.updateMany({
+        where: { id: { in: reservationIds }, paymentStatus: { not: 'PAID' } },
         data: {
           paymentStatus: 'PAID',
           paidAt: new Date(),
@@ -147,33 +149,37 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
 
-      log(`${reservationIds.length} réservation(s) mise(s) à jour: PAID`);
+      log(`${updated.count}/${reservationIds.length} réservation(s) mise(s) à jour: PAID`);
 
-      // 8. Envoyer UN email de confirmation avec TOUTES les activités
-      try {
-        const firstReservation = transactions[0].reservation;
+      // 8. Envoyer l'email SEULEMENT si on a réellement mis à jour des réservations
+      if (updated.count > 0) {
+        try {
+          const firstReservation = transactions[0].reservation;
 
-        await sendPaymentConfirmationEmail({
-          to: firstReservation.email,
-          reservation: {
-            id: firstReservation.id,
-            nom: firstReservation.nom,
-            prenom: firstReservation.prenom,
-            eventName: firstReservation.event.name,
-            eventDate: firstReservation.event.date,
-            activityName: transactions.map(t => t.reservation.activity?.name || t.reservation.activityName).join(', '),
-            participants: firstReservation.participants as any,
-            amount: transactions.reduce((sum, t) => sum + Number(t.reservation.amount), 0),
-          },
-          activities: transactions.map(t => ({
-            name: t.reservation.activity?.name || t.reservation.activityName,
-            participants: t.reservation.participants as Record<string, number>,
-            amount: Number(t.reservation.amount),
-          })),
-        });
-        log('Email de confirmation envoyé');
-      } catch (emailError) {
-        logError('Erreur envoi email:', emailError);
+          await sendPaymentConfirmationEmail({
+            to: firstReservation.email,
+            reservation: {
+              id: firstReservation.id,
+              nom: firstReservation.nom,
+              prenom: firstReservation.prenom,
+              eventName: firstReservation.event.name,
+              eventDate: firstReservation.event.date,
+              activityName: transactions.map(t => t.reservation.activity?.name || t.reservation.activityName).join(', '),
+              participants: firstReservation.participants as any,
+              amount: transactions.reduce((sum, t) => sum + Number(t.reservation.amount), 0),
+            },
+            activities: transactions.map(t => ({
+              name: t.reservation.activity?.name || t.reservation.activityName,
+              participants: t.reservation.participants as Record<string, number>,
+              amount: Number(t.reservation.amount),
+            })),
+          });
+          log('Email de confirmation envoyé');
+        } catch (emailError) {
+          logError('Erreur envoi email:', emailError);
+        }
+      } else {
+        log('Appel webhook dupliqué (réservations déjà PAID), email non renvoyé');
       }
     }
 
