@@ -8,6 +8,7 @@
  * Référence: https://github.com/prisma/prisma/issues/28983
  */
 
+import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 
 // Récupérer DATABASE_URL depuis l'environnement
