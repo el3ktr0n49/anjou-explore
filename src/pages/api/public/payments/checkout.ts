@@ -1,3 +1,6 @@
+// Force SSR : Route API paiement
+export const prerender = false;
+
 /**
  * POST /api/public/payments/checkout
  *

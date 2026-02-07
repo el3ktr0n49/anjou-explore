@@ -1,3 +1,6 @@
+// Force SSR : Route API d'authentification
+export const prerender = false;
+
 /**
  * POST /api/auth/login
  *

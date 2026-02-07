@@ -1,3 +1,6 @@
+// Force SSR : Route API réservation
+export const prerender = false;
+
 /**
  * API Route publique pour créer une réservation événement
  *

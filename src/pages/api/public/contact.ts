@@ -1,3 +1,6 @@
+// Force SSR : Route API
+export const prerender = false;
+
 /**
  * POST /api/public/contact
  * Soumettre une demande de contact ou réservation aventure

@@ -27,7 +27,9 @@
       "Bash(kubectl get:*)",
       "Bash(kubectl describe:*)",
       "Bash(xargs:*)",
-      "Bash(kubectl apply:*)"
+      "Bash(kubectl apply:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ]
   }
 }
