@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, passthroughImageService } from 'astro/config';
 
 import tailwindcss from '@tailwindcss/vite';
 
@@ -20,6 +20,13 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
+
+  // Désactiver l'optimisation des images (images WebP déjà optimisées)
+  // Astro génère du AVIF qui AUGMENTE la taille (+104%) et ralentit le build (+2min)
+  // Passthrough = servir les images telles quelles (WebP optimisés)
+  image: {
+    service: passthroughImageService(),
+  },
 
   vite: {
     plugins: [tailwindcss()]
