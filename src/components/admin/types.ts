@@ -71,6 +71,75 @@ export interface ReservationEvent {
   date: string;
 }
 
+// ========================================
+// Stats Page Types
+// ========================================
+
+export interface GlobalKPIs {
+  revenuePaid: number;
+  revenuePending: number;
+  conversionRate: number;
+  contactsNew: number;
+}
+
+export interface EventSummary {
+  id: string;
+  name: string;
+  slug: string;
+  date: string;
+  status: string;
+}
+
+export interface EventKPIs {
+  totalParticipants: number;
+  totalReservations: number;
+  revenuePaid: number;
+  revenuePending: number;
+  fillRate: number | null;
+}
+
+export interface ActivityBreakdown {
+  activityId: string;
+  activityName: string;
+  maxParticipants: number | null;
+  totalParticipants: number;
+  participantsByType: Record<string, number>;
+  reservationsCount: number;
+  revenuePaid: number;
+  revenuePending: number;
+}
+
+export interface PaymentDistribution {
+  PENDING: number;
+  PAID: number;
+  FAILED: number;
+  REFUNDED: number;
+  CANCELLED: number;
+}
+
+export interface TimelineEntry {
+  date: string;
+  count: number;
+  cumulativeCount: number;
+}
+
+export interface EventStatsData {
+  event: EventSummary;
+  kpis: EventKPIs;
+  activitiesBreakdown: ActivityBreakdown[];
+  paymentDistribution: PaymentDistribution;
+  inscriptionsTimeline: TimelineEntry[];
+}
+
+export interface GlobalStatsResponse {
+  global: GlobalKPIs;
+  events: EventSummary[];
+}
+
+// ========================================
+// Reservations Page Types (continued)
+// ========================================
+
 export interface ReservationFull {
   id: string;
   groupId?: string | null;

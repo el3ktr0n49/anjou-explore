@@ -61,11 +61,11 @@ import Layout from '../../layouts/Layout.astro';
           </div>
         </div>
 
-        <!-- Réservations -->
+        <!-- Réservations (événement actif) -->
         <div class="stats-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="stats-label">Réservations</p>
+              <p id="stat-reservations-label" class="stats-label">Réservations</p>
               <p id="stat-reservations" class="stats-value">
                 <span class="loading-dot">•</span>
                 <span class="loading-dot">•</span>
@@ -81,11 +81,11 @@ import Layout from '../../layouts/Layout.astro';
           </div>
         </div>
 
-        <!-- Revenus -->
+        <!-- Revenus (événement actif) -->
         <div class="stats-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="stats-label">Revenus payés</p>
+              <p id="stat-revenue-label" class="stats-label">Revenus payés</p>
               <p id="stat-revenue" class="stats-value">
                 <span class="loading-dot">•</span>
                 <span class="loading-dot">•</span>
@@ -335,6 +335,9 @@ import Layout from '../../layouts/Layout.astro';
 <script>
   import { checkAuthAndRedirect, setupLogoutButton, type AdminData } from '../../scripts/admin/auth-guard';
 
+  const formatEuro = (value: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
+
   // Charger les statistiques du dashboard
   async function loadStats() {
     try {
@@ -361,41 +364,45 @@ import Layout from '../../layouts/Layout.astro';
             : `${stats.contactsNew} nouvelles demandes`;
       }
 
-      // Mettre à jour les stats de réservations
+      // Tuiles Réservations & Revenus : contextualisées sur l'événement actif
+      const reservationsLabelEl = document.getElementById('stat-reservations-label');
       const reservationsEl = document.getElementById('stat-reservations');
       const reservationsDescEl = document.getElementById('stat-reservations-desc');
-      if (reservationsEl && reservationsDescEl) {
-        reservationsEl.textContent = stats.reservationsTotal.toString();
-        reservationsDescEl.textContent =
-          stats.reservationsTotal === 0
-            ? 'Aucune réservation'
-            : stats.reservationsTotal === 1
-            ? '1 réservation'
-            : `${stats.reservationsTotal} réservations`;
-      }
-
-      // Mettre à jour les stats de revenus
+      const revenueLabelEl = document.getElementById('stat-revenue-label');
       const revenueEl = document.getElementById('stat-revenue');
       const revenueDescEl = document.getElementById('stat-revenue-desc');
-      if (revenueEl && revenueDescEl) {
-        // Formater le montant en euros
-        const formattedRevenue = new Intl.NumberFormat('fr-FR', {
-          style: 'currency',
-          currency: 'EUR',
-        }).format(stats.revenuePaid);
 
-        revenueEl.textContent = formattedRevenue;
+      if (stats.activeEvent) {
+        const ev = stats.activeEvent;
 
-        // Description avec le revenu en attente
-        if (stats.revenuePending > 0) {
-          const formattedPending = new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: 'EUR',
-          }).format(stats.revenuePending);
-          revenueDescEl.textContent = `${formattedPending} en attente`;
-        } else {
-          revenueDescEl.textContent = 'Aucun paiement en attente';
+        // Réservations de l'événement actif
+        if (reservationsLabelEl) reservationsLabelEl.textContent = `Inscrits — ${ev.name}`;
+        if (reservationsEl) reservationsEl.textContent = ev.totalParticipants.toString();
+        if (reservationsDescEl) {
+          reservationsDescEl.textContent =
+            ev.reservationsTotal === 0
+              ? 'Aucune réservation'
+              : `${ev.reservationsTotal} réservation${ev.reservationsTotal > 1 ? 's' : ''}`;
         }
+
+        // Revenus de l'événement actif
+        if (revenueLabelEl) revenueLabelEl.textContent = `Revenus — ${ev.name}`;
+        if (revenueEl) revenueEl.textContent = formatEuro(ev.revenuePaid);
+        if (revenueDescEl) {
+          revenueDescEl.textContent =
+            ev.revenuePending > 0
+              ? `${formatEuro(ev.revenuePending)} en attente`
+              : 'Aucun paiement en attente';
+        }
+      } else {
+        // Aucun événement actif
+        if (reservationsLabelEl) reservationsLabelEl.textContent = 'Réservations';
+        if (reservationsEl) reservationsEl.textContent = '—';
+        if (reservationsDescEl) reservationsDescEl.textContent = 'Aucun événement actif';
+
+        if (revenueLabelEl) revenueLabelEl.textContent = 'Revenus';
+        if (revenueEl) revenueEl.textContent = '—';
+        if (revenueDescEl) revenueDescEl.textContent = 'Aucun événement actif';
       }
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);

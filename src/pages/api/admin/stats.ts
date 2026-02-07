@@ -4,14 +4,21 @@ export const prerender = false;
 /**
  * GET /api/admin/stats
  *
- * Retourne les statistiques globales pour le dashboard admin
+ * Retourne les statistiques pour le dashboard admin :
+ * - Contacts : nombre de demandes non traitées (toujours pertinent)
+ * - Réservations & Revenus : contextualisés sur l'événement actif (OPEN, le plus proche en date)
  *
  * Response (200):
  * {
- *   contactsNew: number,           // Nombre de demandes de contact non traitées
- *   reservationsTotal: number,     // Nombre total de réservations
- *   revenuePending: number,        // Revenu en attente (paiements PENDING)
- *   revenuePaid: number            // Revenu encaissé (paiements PAID)
+ *   contactsNew: number,
+ *   activeEvent: {
+ *     name: string,
+ *     slug: string,
+ *     reservationsTotal: number,
+ *     totalParticipants: number,
+ *     revenuePaid: number,
+ *     revenuePending: number,
+ *   } | null
  * }
  */
 
@@ -24,69 +31,71 @@ export const GET: APIRoute = async (context) => {
     // 1. Vérifier l'authentification
     const admin = await requireAuth(context);
     if (!admin) {
-      return new Response(
-        JSON.stringify({
-          error: 'Non autorisé',
-        }),
-        { status: 401 }
-      );
+      return new Response(JSON.stringify({ error: 'Non autorisé' }), { status: 401 });
     }
 
-    // 2. Récupérer toutes les statistiques en parallèle pour optimiser les performances
-    const [contactsNew, reservationsTotal, revenuePending, revenuePaid] = await Promise.all([
-      // Nombre de demandes de contact avec status = NEW
-      prisma.contactRequest.count({
-        where: {
-          status: 'NEW',
-        },
-      }),
-
-      // Nombre total de réservations
-      prisma.reservation.count(),
-
-      // Somme des montants des réservations en attente (PENDING)
-      prisma.reservation.aggregate({
-        _sum: {
-          amount: true,
-        },
-        where: {
-          paymentStatus: 'PENDING',
-        },
-      }),
-
-      // Somme des montants des réservations payées (PAID)
-      prisma.reservation.aggregate({
-        _sum: {
-          amount: true,
-        },
-        where: {
-          paymentStatus: 'PAID',
+    // 2. Récupérer contacts NEW + événement actif en parallèle
+    const [contactsNew, activeEvent] = await Promise.all([
+      prisma.contactRequest.count({ where: { status: 'NEW' } }),
+      // Événement OPEN le plus proche en date
+      prisma.event.findFirst({
+        where: { status: 'OPEN' },
+        orderBy: { date: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          reservations: {
+            where: { archived: false },
+            select: {
+              amount: true,
+              paymentStatus: true,
+              participants: true,
+            },
+          },
         },
       }),
     ]);
 
-    // 3. Formater les résultats (convertir Decimal en number, gérer null)
-    const stats = {
-      contactsNew,
-      reservationsTotal,
-      revenuePending: revenuePending._sum.amount ? Number(revenuePending._sum.amount) : 0,
-      revenuePaid: revenuePaid._sum.amount ? Number(revenuePaid._sum.amount) : 0,
-    };
+    // 3. Calculer les stats de l'événement actif
+    let activeEventStats = null;
+
+    if (activeEvent) {
+      let totalParticipants = 0;
+      let revenuePaid = 0;
+      let revenuePending = 0;
+
+      for (const reservation of activeEvent.reservations) {
+        // Participants
+        const participants = reservation.participants as Record<string, number>;
+        totalParticipants += Object.values(participants).reduce((sum, qty) => sum + qty, 0);
+
+        // Revenus
+        const amount = Number(reservation.amount);
+        if (reservation.paymentStatus === 'PAID') revenuePaid += amount;
+        if (reservation.paymentStatus === 'PENDING') revenuePending += amount;
+      }
+
+      activeEventStats = {
+        name: activeEvent.name,
+        slug: activeEvent.slug,
+        reservationsTotal: activeEvent.reservations.length,
+        totalParticipants,
+        revenuePaid: Math.round(revenuePaid * 100) / 100,
+        revenuePending: Math.round(revenuePending * 100) / 100,
+      };
+    }
 
     // 4. Retourner les statistiques
-    return new Response(JSON.stringify(stats), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error);
     return new Response(
       JSON.stringify({
-        error: 'Erreur serveur',
+        contactsNew,
+        activeEvent: activeEventStats,
       }),
-      { status: 500 }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
+    return new Response(JSON.stringify({ error: 'Erreur serveur' }), { status: 500 });
   }
 };

@@ -1,0 +1,189 @@
+---
+// Force SSR : Page admin protégée avec contenu dynamique
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import StatsPage from '../../components/admin/islands/StatsPage';
+---
+
+<Layout title="Statistiques" description="Statistiques et analyses Anjou Explore">
+  <!-- Hero Admin -->
+  <section class="bg-gradient-to-r from-[var(--color-anjou-gold)] via-[var(--color-anjou-olive)] to-[var(--color-anjou-brown)] py-12 text-white">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div class="flex items-center space-x-3 mb-2">
+            <a href="/admin/dashboard" class="hover:opacity-75 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+            </a>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <h1 class="text-2xl md:text-3xl font-serif">Statistiques</h1>
+          </div>
+          <p class="text-white/90 text-sm">
+            Analyses et indicateurs de performance
+          </p>
+        </div>
+
+        <button
+          id="logout-btn"
+          class="flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition border border-white/20 text-sm font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span>Déconnexion</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="py-12 bg-gradient-to-br from-[var(--color-anjou-beige)]/20 via-white to-[var(--color-anjou-beige)]/10 min-h-[calc(100vh-300px)]">
+    <div class="container mx-auto px-4 max-w-7xl">
+      <StatsPage client:load />
+    </div>
+  </section>
+</Layout>
+
+<style is:global>
+  /* KPI Cards */
+  .kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(196, 165, 113, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .kpi-icon {
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .kpi-label {
+    font-size: 0.75rem;
+    color: var(--color-anjou-olive);
+    font-weight: 500;
+    margin-bottom: 0.125rem;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-anjou-brown);
+    line-height: 1.2;
+  }
+
+  .kpi-sub {
+    font-size: 0.6875rem;
+    color: #6b7280;
+  }
+
+  /* Chart Cards */
+  .chart-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(196, 165, 113, 0.1);
+    padding: 1.5rem;
+    overflow: hidden;
+  }
+
+  .chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-anjou-brown);
+    margin-bottom: 1rem;
+  }
+
+  .chart-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #9ca3af;
+    font-size: 0.875rem;
+  }
+
+  /* Charts Grid */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .charts-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .charts-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .chart-card-wide {
+    grid-column: 1 / -1;
+  }
+
+  /* Event Selector Filter */
+  .filter-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-anjou-brown);
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 280px;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--color-anjou-gold);
+  }
+
+  /* Loading spinner */
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid rgba(196, 165, 113, 0.2);
+    border-top-color: var(--color-anjou-gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
+<script>
+  import { checkAuthAndRedirect, setupLogoutButton } from '../../scripts/admin/auth-guard';
+
+  checkAuthAndRedirect();
+  setupLogoutButton();
+</script>
