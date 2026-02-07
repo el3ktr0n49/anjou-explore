@@ -19,7 +19,7 @@ function generateSecurePassword(): string {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const numbers = '0123456789';
-  const special = '@$!%*?&';
+  const special = '@$!%*?&_';
   const all = lowercase + uppercase + numbers + special;
 
   // Garantir au moins un caractère de chaque type

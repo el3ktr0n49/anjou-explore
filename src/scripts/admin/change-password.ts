@@ -60,8 +60,8 @@ function validatePassword(password: string): { valid: boolean; errors: string[] 
     errors.push('Le mot de passe doit contenir au moins un chiffre');
   }
 
-  if (!/[@$!%*?&]/.test(password)) {
-    errors.push('Le mot de passe doit contenir au moins un caractère spécial (@$!%*?&)');
+  if (!/[@$!%*?&_]/.test(password)) {
+    errors.push('Le mot de passe doit contenir au moins un caractère spécial (@$!%*?&_)');
   }
 
   return {
