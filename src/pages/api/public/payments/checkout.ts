@@ -130,10 +130,11 @@ export const POST: APIRoute = async ({ request }) => {
       .filter((name, index, self) => self.indexOf(name) === index) // Unique
       .join(', ');
 
-    // 7. Construire l'URL de retour
+    // 7. Construire les URLs
     const appUrl = process.env.APP_URL || 'http://localhost:4321';
     const returnParam = groupId ? `groupId=${groupId}` : `reservationId=${reservationId}`;
     const redirectUrl = `${appUrl}/payment/return?${returnParam}`;
+    const webhookUrl = `${appUrl}/api/webhooks/sumup`;
 
     // 8. Créer le checkout SumUp
     const checkout = await createCheckout({
@@ -142,6 +143,7 @@ export const POST: APIRoute = async ({ request }) => {
       checkoutReference: groupId || reservationId || '',
       description: `${firstReservation.event.name} - ${activitiesDescription} - ${firstReservation.prenom} ${firstReservation.nom}`,
       redirectUrl,
+      returnUrl: webhookUrl,
     });
 
     // 9. Créer une transaction de paiement pour chaque réservation

@@ -16,7 +16,8 @@ export interface SumUpCheckoutRequest {
   currency: string;         // Code devise ISO (ex: "EUR")
   checkoutReference: string; // Référence unique (ex: reservationId)
   description: string;      // Description visible par l'utilisateur
-  redirectUrl: string;      // URL de retour après paiement
+  redirectUrl: string;      // URL de redirection navigateur après paiement
+  returnUrl: string;        // URL webhook (SumUp POST le statut du paiement)
 }
 
 export interface SumUpCheckoutResponse {
@@ -105,6 +106,7 @@ export async function createCheckout(request: SumUpCheckoutRequest): Promise<Sum
           ? { merchant_code: SUMUP_MERCHANT_CODE }
           : { pay_to_email: SUMUP_PAY_TO_EMAIL }),
         redirect_url: request.redirectUrl,
+        return_url: request.returnUrl,
         hosted_checkout: {
           enabled: true,
         },
