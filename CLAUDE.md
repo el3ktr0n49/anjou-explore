@@ -550,7 +550,23 @@ Ce fichier est le contexte principal du projet. Pour des informations plus déta
 #### À venir
 - [ ] Page Témoignages
 - [ ] Configuration Docker/Kubernetes (production)
-- [ ] Tests automatisés (Vitest)
+- [ ] Environnement "prod locale" (Docker Compose)
+  - `docker-compose.prod.yml` : build multi-stage + `NODE_ENV=production` sur la machine de dev
+  - Valide : build Docker, cookies Secure/HTTPS, migrations Prisma, variables d'env
+  - Script `bun run preview:prod` pour lancer la stack conteneurisée
+  - Tunnel ngrok/cloudflared pour tester les webhooks SumUp ponctuellement
+- [ ] Tests automatisés (Vitest, stratégie ciblée ~20-30 tests)
+  - Priorité 1 : Services / logique métier (`src/lib/services/`) — calculs montants, groupement réservations, transitions de statut
+  - Priorité 2 : Routes API (`src/pages/api/`) — auth 401, validation inputs, webhook SumUp (signature, idempotence)
+  - Priorité 3 : Utilitaires (`src/lib/utils/`, `src/lib/auth/`) — JWT, validation mot de passe, helpers purs
+  - Hors scope : pages .astro statiques, composants Preact UI, queries Prisma simples
+- [ ] Linting & Formatting (ESLint + Prettier, config minimale)
+  - ESLint : config flat, règles recommandées TypeScript (bugs réels, pas cosmétique)
+  - Prettier : formatage automatique uniforme
+  - Intégration CI/CD (Phase G)
+- [ ] Analytics avec Umami (self-hosted, utilise PostgreSQL existant, GDPR-compliant, script < 2 KB)
+  - Déploiement Docker/K3s (`ghcr.io/umami-software/umami:postgresql-latest`)
+  - Intégration dashboard admin via API REST Umami (composants Preact StatsCard)
 
 ## Important Notes
 

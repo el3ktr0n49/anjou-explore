@@ -224,59 +224,159 @@ kubectl run -it --rm psql \
 
 ## 💾 Gestion des backups
 
-### Backups automatiques
+### Architecture 3 niveaux
 
-- **Niveau 1** : Snapshots Longhorn (configuration du cluster)
-- **Niveau 2** : pg_dump quotidien à 2h (CronJob)
-- **Niveau 3** : Sync S3 hebdomadaire dimanche 3h (CronJob optionnel)
+| Niveau | Méthode | Stockage | Fréquence | Rétention |
+|--------|---------|----------|-----------|-----------|
+| 1 | Longhorn Snapshots | Disque K3s | Automatique | Config cluster |
+| 2 | pg_dump (CronJob `postgres-backup`) | PVC local 2Gi | Quotidien 2h UTC | 30 backups |
+| 3 | S3 Sync (CronJob `postgres-backup-s3`) | Scaleway S3 | Hebdo dimanche 3h | 8 semaines |
 
-### Backup manuel
+### Lister les backups locaux (PVC)
 
 ```bash
-# Lancer le job de backup immédiatement
-kubectl create job --from=cronjob/postgres-backup manual-backup-$(date +%s) -n anjouexplore
-
-# Voir les logs
-kubectl logs -n anjouexplore -l job-name=manual-backup-XXX -f
+kubectl run backup-ls --rm -it --restart=Never -n anjouexplore \
+  --image=busybox \
+  --overrides='{
+    "spec": {
+      "containers": [{
+        "name": "backup-ls",
+        "image": "busybox",
+        "command": ["ls", "-lh", "/backups"],
+        "volumeMounts": [{"name": "bk", "mountPath": "/backups"}]
+      }],
+      "volumes": [{
+        "name": "bk",
+        "persistentVolumeClaim": {"claimName": "backup-pvc"}
+      }]
+    }
+  }'
 ```
 
-### Restauration depuis backup
+### Copier un backup sur son poste
 
 ```bash
-# 1. Lister les backups disponibles
-kubectl exec -n anjouexplore -it statefulset/postgres -- ls -lh /backups
+# 1. Lancer un pod temporaire (reste actif 5 min)
+kubectl run backup-cp --restart=Never -n anjouexplore \
+  --image=busybox \
+  --overrides='{
+    "spec": {
+      "containers": [{
+        "name": "backup-cp",
+        "image": "busybox",
+        "command": ["sleep", "300"],
+        "volumeMounts": [{"name": "bk", "mountPath": "/backups"}]
+      }],
+      "volumes": [{
+        "name": "bk",
+        "persistentVolumeClaim": {"claimName": "backup-pvc"}
+      }]
+    }
+  }'
 
-# 2. Copier un backup localement
-kubectl cp anjouexplore/postgres-0:/backups/anjouexplore_backup_YYYYMMDD_HHMMSS.sql.gz ./backup.sql.gz
+# 2. Copier le fichier voulu
+kubectl cp anjouexplore/backup-cp:/backups/anjouexplore_backup_YYYYMMDD_HHMMSS.sql.gz ./backup.sql.gz
 
-# 3. Décompresser
+# 3. Supprimer le pod temporaire
+kubectl delete pod backup-cp -n anjouexplore
+```
+
+### Déclencher un backup manuellement
+
+```bash
+# Backup local (pg_dump)
+kubectl create job --from=cronjob/postgres-backup \
+  manual-backup-$(date +%s) -n anjouexplore
+
+# Sync S3
+kubectl create job --from=cronjob/postgres-backup-s3 \
+  manual-s3-sync-$(date +%s) -n anjouexplore
+
+# Suivre les logs
+kubectl logs -n anjouexplore -l component=backup -f      # backup local
+kubectl logs -n anjouexplore -l component=backup-s3 -f    # sync S3
+```
+
+### Vérifier l'état des CronJobs
+
+```bash
+# Voir les CronJobs et leur dernière exécution
+kubectl get cronjobs -n anjouexplore
+
+# Voir les jobs récents
+kubectl get jobs -n anjouexplore --sort-by=.metadata.creationTimestamp
+
+# Logs du dernier backup
+kubectl logs -n anjouexplore job/<nom-du-job>
+```
+
+### Nettoyer les anciens jobs
+
+```bash
+# Supprimer tous les jobs terminés
+kubectl delete jobs -n anjouexplore --field-selector status.successful=1
+```
+
+### Restauration depuis backup local
+
+```bash
+# 1. Copier le backup sur son poste (voir section ci-dessus)
+
+# 2. Décompresser
 gunzip backup.sql.gz
 
-# 4. Restaurer
+# 3. Restaurer dans le pod PostgreSQL
 kubectl exec -i -n anjouexplore statefulset/postgres -- \
   psql -U anjouexplore -d anjouexplore < backup.sql
 ```
 
 ### Restauration depuis S3
 
+Si les backups locaux sont perdus, on peut récupérer depuis Scaleway S3 :
+
 ```bash
+# Lancer un pod rclone avec la config S3
+kubectl run s3-restore --rm -it --restart=Never -n anjouexplore \
+  --image=rclone/rclone:latest \
+  --overrides='{
+    "spec": {
+      "containers": [{
+        "name": "s3-restore",
+        "image": "rclone/rclone:latest",
+        "command": ["/bin/sh"],
+        "stdin": true,
+        "tty": true,
+        "env": [
+          {"name": "S3_ENDPOINT", "valueFrom": {"secretKeyRef": {"name": "s3-backup-secret", "key": "S3_ENDPOINT"}}},
+          {"name": "S3_BUCKET", "valueFrom": {"secretKeyRef": {"name": "s3-backup-secret", "key": "S3_BUCKET"}}},
+          {"name": "S3_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "s3-backup-secret", "key": "S3_ACCESS_KEY_ID"}}},
+          {"name": "S3_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "s3-backup-secret", "key": "S3_SECRET_ACCESS_KEY"}}},
+          {"name": "S3_REGION", "valueFrom": {"secretKeyRef": {"name": "s3-backup-secret", "key": "S3_REGION"}}}
+        ]
+      }]
+    }
+  }'
+
+# Une fois dans le pod, configurer rclone et lister/télécharger :
+mkdir -p /root/.config/rclone
+cat > /root/.config/rclone/rclone.conf <<EOCONF
+[s3remote]
+type = s3
+provider = Scaleway
+endpoint = ${S3_ENDPOINT}
+access_key_id = ${S3_ACCESS_KEY_ID}
+secret_access_key = ${S3_SECRET_ACCESS_KEY}
+region = ${S3_REGION}
+EOCONF
+
 # Lister les backups S3
-kubectl run -it --rm rclone \
-  --image=rclone/rclone \
-  --namespace=anjouexplore \
-  --restart=Never \
-  --env-from=secret/s3-backup-secret \
-  -- rclone ls s3remote:anjouexplore-backups/postgres-backups
+rclone ls s3remote:${S3_BUCKET}/postgres-backups
 
-# Télécharger depuis S3
-kubectl run -it --rm rclone \
-  --image=rclone/rclone \
-  --namespace=anjouexplore \
-  --restart=Never \
-  --env-from=secret/s3-backup-secret \
-  -- rclone copy s3remote:anjouexplore-backups/postgres-backups/backup_YYYYMMDD.sql.gz /tmp/
+# Télécharger un backup
+rclone copy s3remote:${S3_BUCKET}/postgres-backups/anjouexplore_backup_XXXXXXXX.sql.gz /tmp/
 
-# Ensuite restaurer comme ci-dessus
+# Puis copier depuis le pod vers son poste (depuis un autre terminal) :
+# kubectl cp anjouexplore/s3-restore:/tmp/anjouexplore_backup_XXXXXXXX.sql.gz ./backup.sql.gz
 ```
 
 ## 🔄 Mise à jour de l'application

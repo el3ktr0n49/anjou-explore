@@ -35,12 +35,13 @@ spec:
                   cat > /root/.config/rclone/rclone.conf <<EOF
                   [s3remote]
                   type = s3
-                  provider = Other
+                  provider = Scaleway
                   endpoint = ${S3_ENDPOINT}
                   access_key_id = ${S3_ACCESS_KEY_ID}
                   secret_access_key = ${S3_SECRET_ACCESS_KEY}
                   region = ${S3_REGION}
                   acl = private
+                  no_check_bucket = true
                   EOF
 
                   # Sync backups to S3
@@ -51,10 +52,10 @@ spec:
                     --checkers 8 \
                     --log-level INFO
 
-                  # Cleanup old backups on S3 (keep 12 weeks = ~3 months)
-                  echo "🧹 Cleaning old S3 backups (keeping last 12 weeks)..."
+                  # Cleanup old backups on S3 (keep 8 weeks = ~2 months)
+                  echo "🧹 Cleaning old S3 backups (keeping last 8 weeks)..."
                   rclone delete s3remote:${S3_BUCKET}/postgres-backups \
-                    --min-age 84d \
+                    --min-age 56d \
                     --rmdirs
 
                   # Stats
