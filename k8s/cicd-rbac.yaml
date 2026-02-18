@@ -1,0 +1,108 @@
+# ═══════════════════════════════════════════════════════════════
+# ServiceAccount CI/CD dédié pour Gitea Actions
+# ═══════════════════════════════════════════════════════════════
+#
+# Permissions limitées au namespace "anjouexplore" uniquement.
+# Aucun accès aux autres namespaces ni aux ressources cluster.
+#
+# Prérequis : le namespace "anjouexplore" doit exister avant
+#   kubectl apply -f k8s/namespace.yaml
+#
+# Appliquer avec :
+#   kubectl apply -f k8s/cicd-rbac.yaml
+#
+# Puis générer le kubeconfig :
+#   ./scripts/generate-cicd-kubeconfig.sh
+#
+# ═══════════════════════════════════════════════════════════════
+
+---
+# 1. ServiceAccount dédié au CI/CD
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cicd-deployer
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+    component: cicd
+
+---
+# 2. Token longue durée pour le ServiceAccount
+#    (K8s 1.24+ ne crée plus de token automatiquement)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cicd-deployer-token
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+    component: cicd
+  annotations:
+    kubernetes.io/service-account.name: cicd-deployer
+type: kubernetes.io/service-account-token
+
+---
+# 3. Role : permissions dans le namespace anjouexplore
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cicd-deployer
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+    component: cicd
+rules:
+  # Deployments, StatefulSets (app + postgres)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+  # Services, ConfigMaps, Secrets, PVCs, ServiceAccounts
+  - apiGroups: [""]
+    resources:
+      - services
+      - configmaps
+      - secrets
+      - persistentvolumeclaims
+      - serviceaccounts
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+  # Pods : lecture + logs (pour vérifier le rollout et les migrations)
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+
+  # Jobs : migrations Prisma (create + delete des anciens jobs)
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # CronJobs : backups
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+  # IngressRoute Traefik (CRD namespace-scoped)
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+# 4. RoleBinding : lier le Role au ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cicd-deployer
+  namespace: anjouexplore
+  labels:
+    app: anjouexplore
+    component: cicd
+subjects:
+  - kind: ServiceAccount
+    name: cicd-deployer
+    namespace: anjouexplore
+roleRef:
+  kind: Role
+  name: cicd-deployer
+  apiGroup: rbac.authorization.k8s.io
