@@ -2,95 +2,68 @@
 
 Site web pour l'association Anjou Explore - Escapades nature, patrimoine et gastronomie en Anjou.
 
-## 🚀 Migration depuis Wix
+## Stack Technique
 
-Ce projet est une migration du site Wix vers une stack moderne :
-- **Framework** : Astro 5.x
+- **Framework** : Astro 5.x (mode hybride SSG + SSR)
 - **Runtime** : Bun
+- **Database** : PostgreSQL 16 (via Docker)
+- **ORM** : Prisma 7.x
+- **UI interactive** : Preact (Astro Islands)
 - **Styling** : TailwindCSS v4
 - **Language** : TypeScript
+- **Auth** : JWT + Google Authenticator (2FA)
+- **Paiements** : SumUp API
+- **Emails** : Resend
 
-## 📋 État de la Migration
-
-### ✅ Fait
-- [x] Structure de base du projet
-- [x] Layout avec header/footer responsive
-- [x] 9 pages créées avec structure de base
-- [x] Formulaire groupe fonctionnel (sans paiement)
-- [x] Navigation complète
-
-### 🔄 En cours
-- [ ] Migration du contenu exact depuis Wix (screenshots en cours)
-- [ ] Images et assets
-- [ ] Galerie photos
-
-### 📅 À venir
-- [ ] Intégration API SumUp (paiements)
-- [ ] Base de données
-- [ ] Page d'administration
-- [ ] Déploiement Docker/Kubernetes
-
-## 🛠️ Commandes
+## Commandes
 
 ```bash
-# Développement
-bun run dev      # Démarre le serveur sur http://localhost:4321
+# Developpement
+bun run dev              # Serveur dev sur http://localhost:4321
+bun run build            # Build de production
+bun run preview          # Preview du build
 
-# Build
-bun run build    # Build de production
-bun run preview  # Preview du build
-
-# Dépendances
-bun install      # Installe les dépendances
-bun add <pkg>    # Ajoute un package
+# Base de donnees
+docker-compose up -d     # Demarrer PostgreSQL + pgAdmin
+bun run db:generate      # Generer le client Prisma
+bun run db:push          # Pousser le schema (dev)
+bun run db:migrate       # Migrations (prod)
+bun run db:studio        # Prisma Studio
+bun run db:seed          # Donnees de test
 ```
 
-## 📁 Structure
+## Structure
 
 ```
-src/
-├── pages/           # Routes (file-based routing)
-│   ├── index.astro              # Accueil
-│   ├── notre-catalogue.astro    # Catalogue des activités
-│   ├── nos-suggestions.astro    # Suggestions
-│   ├── equipe.astro           # Présentation de l'équipe
-│   ├── galerie-photos.astro     # Galerie photos
-│   ├── témoignages.astro        # Témoignages clients
-│   ├── formulaire-groupe.astro  # Formulaire de réservation
-│   ├── règlement-course.astro   # Règlement
-│   └── ae6.astro                # Page AE6
-├── layouts/
-│   └── Layout.astro # Layout principal
-├── components/      # Composants réutilisables (à créer)
-└── styles/
-    └── global.css   # TailwindCSS
-
-public/              # Assets statiques
-screenshots/         # Screenshots du site Wix (référence)
+anjouexplore/
+├── src/
+│   ├── pages/           # Routes (file-based) + API endpoints
+│   ├── components/      # Composants Astro + Preact Islands
+│   ├── layouts/         # Layout principal
+│   ├── lib/             # Backend (auth, services, DB)
+│   ├── scripts/         # Scripts client-side
+│   └── styles/          # TailwindCSS
+├── prisma/              # Schema et migrations
+├── k8s/                 # Manifests Kubernetes
+├── docs/                # Documentation detaillee
+├── scripts/             # Scripts d'optimisation (images)
+└── public/              # Assets statiques
 ```
 
-## 🎨 Design
+## Documentation
 
-- **Couleur principale** : Vert (nature, Anjou)
-- **Responsive** : Mobile-first avec menu hamburger
-- **TailwindCSS** : Classes utility-first
+- [CLAUDE.md](./CLAUDE.md) - Instructions Claude Code et details techniques complets
+- [docs/](./docs/) - Documentation detaillee :
+  - [Backend Quickstart](./docs/BACKEND_QUICKSTART.md) - Demarrage rapide du backend
+  - [Guide Images](./docs/GUIDE-IMAGES.md) - Optimisation et gestion des images
+  - [Historique des Phases](./docs/CLAUDE_PHASES.md) - Phases de developpement A-F
+  - [Refactorisation Preact](./docs/REFACTOR_PREACT.md) - Migration vers Astro Islands
+  - [Deploiement](./docs/DEPLOYMENT.md) - Guide de deploiement
+  - [Deploiement generique](./docs/CLAUDE_DEPLOY.md) - Docker, K8s, CI/CD
+  - [CI/CD Homelab](./docs/CLAUDE_CICD.md) - Gitea Actions, Harbor
+  - [Kubernetes K3s](./docs/CLAUDE_K3S.md) - Cluster K3s homelab
 
-## 📝 Prochaines Étapes
+## Contact
 
-1. **Capturer screenshots du site Wix** (en cours)
-2. **Migrer le contenu** page par page
-3. **Ajouter images et assets**
-4. **Affiner le formulaire** selon l'original
-5. **Intégrer SumUp** pour les paiements
-
-## 📞 Contact
-
-Site original : https://www.anjouexplore.com/
-Téléphone : 06.83.92.45.03
-
-## 📚 Documentation
-
-- [Astro Docs](https://docs.astro.build)
-- [TailwindCSS Docs](https://tailwindcss.com/docs)
-- [Bun Docs](https://bun.sh/docs)
-- Voir [CLAUDE.md](./CLAUDE.md) pour plus de détails techniques
+Site : https://www.anjouexplore.com/
+Telephone : 06.83.92.45.03

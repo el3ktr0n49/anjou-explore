@@ -95,7 +95,7 @@ src/scripts/admin/                  # Scripts archivés (*.old)
 - 13 composants Preact créés (4 UI + 9 Islands)
 - 100% des pages admin migrées
 
-**Documentation complète** : Voir [REFACTOR_PREACT.md](REFACTOR_PREACT.md)
+**Documentation complète** : Voir [REFACTOR_PREACT.md](docs/REFACTOR_PREACT.md)
 
 ## Commands
 
@@ -438,7 +438,7 @@ anjouexplore/
 ├── scripts/                # Scripts d'optimisation
 │   ├── optimize-images.ts  # Conversion JPG/PNG → WebP
 │   └── update-image-paths.ts  # (legacy) Mise à jour chemins
-├── screenshots/            # Wix site screenshots for migration reference
+├── docs/                   # Documentation détaillée (phases, déploiement, guides)
 ├── docker-compose.yml      # ⭐ PostgreSQL + pgAdmin
 ├── .env                    # ⭐ Variables d'environnement (NON commité)
 ├── .env.example            # ⭐ Template des variables
@@ -473,7 +473,7 @@ Astro utilise le **file-based routing**. Chaque fichier `.astro` dans `src/pages
 - **Usage** : Imports TypeScript + composant `<Image>` d'Astro
 - **Outil** : Sharp pour la compression et conversion
 - **Nommage** : Utiliser des noms descriptifs en kebab-case (ex: `canoe.webp`, `hero-background.webp`)
-- **Voir** : [GUIDE-IMAGES.md](GUIDE-IMAGES.md) pour les détails complets
+- **Voir** : [GUIDE-IMAGES.md](docs/GUIDE-IMAGES.md) pour les détails complets
 
 **Exemple d'utilisation** :
 ```astro
@@ -489,7 +489,7 @@ import heroImage from '../assets/images/homepage/canoe.webp';
 
 Ce fichier est le contexte principal du projet. Pour des informations plus détaillées sur des aspects spécifiques :
 
-- **[CLAUDE_PHASES.md](CLAUDE_PHASES.md)** : Historique complet des phases de développement (Phases A-F, Post-Phase F)
+- **[CLAUDE_PHASES.md](docs/CLAUDE_PHASES.md)** : Historique complet des phases de développement (Phases A-F, Post-Phase F)
   - Infrastructure Backend (Phase A)
   - Authentification Admin (Phase B)
   - Gestion Contacts et Dashboard (Phase C)
@@ -498,7 +498,7 @@ Ce fichier est le contexte principal du projet. Pour des informations plus déta
   - Paiements SumUp (Phase F)
   - Groupement Réservations Multi-Activités (Post-Phase F)
 
-- **[CLAUDE_DEPLOY.md](CLAUDE_DEPLOY.md)** : Guide de déploiement générique
+- **[CLAUDE_DEPLOY.md](docs/CLAUDE_DEPLOY.md)** : Guide de déploiement générique
   - Docker et Docker Compose (configuration générique)
   - Kubernetes (manifests, secrets, deployments)
   - CI/CD avec GitHub Actions
@@ -506,14 +506,14 @@ Ce fichier est le contexte principal du projet. Pour des informations plus déta
   - Monitoring, Logging, Backups
   - Sécurité et Troubleshooting
 
-- **[CLAUDE_CICD.md](CLAUDE_CICD.md)** : CI/CD spécifique homelab (référence)
+- **[CLAUDE_CICD.md](docs/CLAUDE_CICD.md)** : CI/CD spécifique homelab (référence)
   - Gitea Actions (git.ratons.ovh)
   - Harbor Registry (harbor.ratons.ovh)
   - Workflows de build, test, et déploiement
   - Stratégie de tagging Docker
   - Mirroring vers GitHub
 
-- **[CLAUDE_K3S.md](CLAUDE_K3S.md)** : Kubernetes K3s spécifique homelab (référence)
+- **[CLAUDE_K3S.md](docs/CLAUDE_K3S.md)** : Kubernetes K3s spécifique homelab (référence)
   - K3s cluster (*.ratons.ovh)
   - Traefik ingress controller
   - Authelia SSO/2FA

@@ -303,4 +303,4 @@ kubectl exec -it -n anjouexplore deployment/anjouexplore-app -- \
 
 ---
 
-**Prochaine étape** : [DEPLOYMENT.md](../DEPLOYMENT.md) - Déployer l'infrastructure
+**Prochaine étape** : [DEPLOYMENT.md](../docs/DEPLOYMENT.md) - Déployer l'infrastructure

@@ -165,4 +165,4 @@ Si tu veux conserver les originaux :
 - [Documentation Sharp](https://sharp.pixelplumbing.com/)
 - [Composant Image Astro](https://docs.astro.build/en/guides/images/)
 - [Guide WebP](https://developers.google.com/speed/webp)
-- [Guide complet du projet](../GUIDE-IMAGES.md)
+- [Guide complet du projet](../docs/GUIDE-IMAGES.md)

@@ -495,8 +495,8 @@ kubectl rollout restart deployment reflector -n kube-system
 
 ## 📚 Ressources
 
-- [CLAUDE_DEPLOY.md](../CLAUDE_DEPLOY.md) : Guide de déploiement général
-- [CLAUDE_K3S.md](../CLAUDE_K3S.md) : Spécificités K3s homelab
-- [CLAUDE_CICD.md](../CLAUDE_CICD.md) : Pipeline Gitea Actions
+- [CLAUDE_DEPLOY.md](../docs/CLAUDE_DEPLOY.md) : Guide de déploiement général
+- [CLAUDE_K3S.md](../docs/CLAUDE_K3S.md) : Spécificités K3s homelab
+- [CLAUDE_CICD.md](../docs/CLAUDE_CICD.md) : Pipeline Gitea Actions
 - [.env.production.example](../.env.production.example) : Template variables prod
 - [Traefik IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/) : Documentation officielle
