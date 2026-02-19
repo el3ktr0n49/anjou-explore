@@ -151,7 +151,7 @@ jobs:
         run: configure-kubectl ${{ env.KUBE_NAMESPACE }}
 
       - name: Verify cluster connection
-        run: kubectl cluster-info
+        run: kubectl get namespace ${{ env.KUBE_NAMESPACE }}
 
       - name: Checkout migration manifest
         uses: actions/checkout@v4
@@ -206,7 +206,7 @@ jobs:
         run: configure-kubectl ${{ env.KUBE_NAMESPACE }}
         
       - name: Verify cluster connection
-        run: kubectl cluster-info
+        run: kubectl get namespace ${{ env.KUBE_NAMESPACE }}
 
       - name: Deploy to Kubernetes
         run: |
