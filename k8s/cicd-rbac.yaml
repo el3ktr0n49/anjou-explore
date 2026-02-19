@@ -106,3 +106,41 @@ roleRef:
   kind: Role
   name: cicd-deployer
   apiGroup: rbac.authorization.k8s.io
+
+---
+# 5. ClusterRole minimal : API discovery + vérification de connexion
+#    Nécessaire pour que "kubectl cluster-info" fonctionne dans le CI/CD
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cicd-deployer-cluster-read
+  labels:
+    app: anjouexplore
+    component: cicd
+rules:
+  # API discovery (kubectl cluster-info, kubectl api-resources)
+  - nonResourceURLs: ["/api", "/api/*", "/apis", "/apis/*", "/healthz", "/version"]
+    verbs: ["get"]
+
+  # Lire les namespaces (pour vérifier que le namespace cible existe)
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+
+---
+# 6. ClusterRoleBinding : lier le ClusterRole au ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cicd-deployer-cluster-read
+  labels:
+    app: anjouexplore
+    component: cicd
+subjects:
+  - kind: ServiceAccount
+    name: cicd-deployer
+    namespace: anjouexplore
+roleRef:
+  kind: ClusterRole
+  name: cicd-deployer-cluster-read
+  apiGroup: rbac.authorization.k8s.io
