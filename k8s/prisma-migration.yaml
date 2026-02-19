@@ -11,6 +11,17 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      # Préférer le node "rocket" (plus de RAM), fallback sur les autres si indisponible
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - rocket
       imagePullSecrets:
         - name: harbor-registry
       containers:
