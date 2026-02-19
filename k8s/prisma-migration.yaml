@@ -11,61 +11,34 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      # Préférer le node "rocket" (plus de RAM), fallback sur les autres si indisponible
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - rocket
-      tolerations:
-        - key: nvidia.com/gpu
-          operator: Exists
-          effect: NoSchedule
       imagePullSecrets:
         - name: harbor-registry
       containers:
         - name: migrate
           image: harbor.ratons.ovh/anjouexplore/anjouexplore:latest
           command:
-            - /bin/sh
-            - -c
-            - |
-              # Vérifier que DATABASE_URL est défini
-              if [ -z "$DATABASE_URL" ]; then
-                echo "❌ ERROR: DATABASE_URL is not set!"
-                exit 1
-              fi
-
-              # Attendre que PostgreSQL soit prêt (retry 30 fois avec 2s d'intervalle = 1min max)
-              echo "⏳ Waiting for database to be ready..."
-              for i in $(seq 1 30); do
-                if bun run -e "import{prisma}from'./src/lib/db/client';await prisma.\$connect();await prisma.\$disconnect()" 2>/dev/null; then
-                  echo "✅ Database ready!"
-                  break
-                fi
-                [ $i -eq 30 ] && { echo "❌ Database not ready after 30 attempts"; exit 1; }
-                sleep 2
-              done
-
-              # Le script init-db.ts gère :
-              # - Vérification si DB vide (premier déploiement ou non)
-              # - Application des migrations Prisma si nécessaires
-              # - Seed des admins si première installation
-              # Note: prisma migrate deploy est idempotent (ne fait rien si déjà à jour)
-              echo "🔄 Running database initialization..."
-              bun run scripts/init-db.ts
+            - bun
+            - run
+            - scripts/init-db.ts
           resources:
             requests:
               cpu: 250m
               memory: 512Mi
-            limits:
-              cpu: "1"
-              memory: 2Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
+            - configMapRef:
+                name: anjouexplore-config
             - secretRef:
                 name: anjouexplore-secret
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -1,6 +1,6 @@
 # Multi-stage build for Anjou Explore (Astro + Bun)
 # Stage 1: Dependencies and Build
-FROM oven/bun:1-alpine AS builder
+FROM oven/bun:1.3.8-alpine AS builder
 
 WORKDIR /build
 
@@ -34,7 +34,7 @@ COPY . .
 RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db?schema=public" bun run build
 
 # Stage 2: Production image
-FROM oven/bun:1-alpine
+FROM oven/bun:1.3.8-alpine
 
 # Metadata
 LABEL maintainer="Anjou Explore <anjouexplore@gmail.com>"
