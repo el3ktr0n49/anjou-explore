@@ -22,6 +22,10 @@ spec:
                     operator: In
                     values:
                       - rocket
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
       imagePullSecrets:
         - name: harbor-registry
       containers:
