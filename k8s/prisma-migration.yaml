@@ -44,6 +44,13 @@ spec:
               # Note: prisma migrate deploy est idempotent (ne fait rien si déjà à jour)
               echo "🔄 Running database initialization..."
               bun run scripts/init-db.ts
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
           envFrom:
             - secretRef:
                 name: anjouexplore-secret
