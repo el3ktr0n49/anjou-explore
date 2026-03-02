@@ -1,4 +1,12 @@
 # Multi-stage build for Anjou Explore (Astro + Bun)
+#
+# ⚠️  Bun version figée à 1.3.8 — NE PAS mettre à jour sans tester les migrations Prisma !
+# Bun 1.3.9 a un revert de mimalloc v3→v2 qui cause des OOMKill en container K8s.
+# L'allocateur v2 ne relâche pas les pages mémoire assez vite → RSS explose → kernel OOM killer.
+# Issue GitHub : https://github.com/oven-sh/bun/issues/27196
+# Avant de bump : tester `bun ./node_modules/.bin/prisma migrate deploy` dans un container
+# avec memory limit (ex: docker run -m 512m) pour vérifier que ça ne OOMKill plus.
+#
 # Stage 1: Dependencies and Build
 FROM oven/bun:1.3.8-alpine AS builder
 
