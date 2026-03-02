@@ -41,6 +41,7 @@ spec:
                   secret_access_key = ${S3_SECRET_ACCESS_KEY}
                   region = ${S3_REGION}
                   acl = private
+                  storage_class = ONEZONE_IA
                   no_check_bucket = true
                   EOF
 
