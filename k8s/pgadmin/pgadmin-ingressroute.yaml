@@ -13,13 +13,15 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`anjouexplore-pgadmin.ratons.ovh`)
+    - match: Host(`pgadmin.anjouexplore.com`)
       kind: Rule
       middlewares:
         - name: authelia
           namespace: authelia
+        - name: geoblock-france-only
+          namespace: traefik
       services:
         - name: pgadmin
           port: 80
   tls:
-    secretName: ratons-ovh-wildcard-tls
+    secretName: anjouexplore-wildcard-tls

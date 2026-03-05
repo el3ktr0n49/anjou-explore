@@ -14,11 +14,11 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`anjouexplore.ratons.ovh`)
+    - match: Host(`anjouexplore.com`) || Host(`www.anjouexplore.com`)
       kind: Rule
       # Pas de middleware Authelia : l'application gère son propre 2FA (JWT + Google Authenticator)
       services:
         - name: anjouexplore-app
           port: 80
   tls:
-    secretName: ratons-ovh-wildcard-tls
+    secretName: anjouexplore-wildcard-tls
